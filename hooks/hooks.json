@@ -1,0 +1,4 @@
+{
+  "description": "The snoozing-dog hooks module",
+  "modules": ["./register.js"]
+}
