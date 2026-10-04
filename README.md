@@ -10,7 +10,7 @@ with Claude Code v2.1.281 in a terminal. The Desktop app gets no animal.
 ## Run it
 
 This repository is also a plugin marketplace. To install the mod for every
-session, run this in Claude Code v2.1.275 or later, then confirm adding the
+session, run this in Claude Code v2.1.287 or later, then confirm adding the
 marketplace and choose a scope:
 
 ```text
@@ -21,14 +21,8 @@ To try it for one session, clone this repository, then load the clone's
 directory:
 
 ```bash
-export CLAUDE_CODE_ENABLE_FUNCTION_HOOKS=1
 claude --plugin-dir ./pet
 ```
-
-Builds older than v2.1.287 need `CLAUDE_CODE_ENABLE_FUNCTION_HOOKS=1`, both to
-try the mod and after installing it. Later builds ignore it. Export the
-variable rather than putting it in front of `claude` on the same line, which
-doesn't reach Claude Code if `claude` is a shell alias.
 
 ## What the animal does
 
