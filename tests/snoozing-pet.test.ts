@@ -499,7 +499,14 @@ test('a standing camel keeps a clear row above its head and hump', () => {
 test('every animal tilts its head while thinking', () => {
   for (const name of ['camel', 'cat', 'dog']) {
     const sitting = (headDy: number) => {
-      const frame = { animal: name, pose: 'sit', head: { eye: 'open', ear: 'up', mouth: 'shut' }, headDy, x: 20, effects: [] }
+      const frame = {
+        animal: name,
+        pose: 'sit',
+        head: { eye: 'open', ear: 'up', mouth: 'shut' },
+        headDy,
+        x: 20,
+        effects: [],
+      }
       return Array.from(drawScene(frame, 40)).join()
     }
     expect(sitting(-1)).not.toBe(sitting(0))
@@ -512,7 +519,10 @@ test('a frame without an animal draws the dog', () => {
 })
 
 test('the z’s float clear of every sleeping animal’s head and ears', () => {
-  for (const [name, nap] of ['camel', 'cat', 'dog'].flatMap((name) => [[name, null], [name, 'roll']])) {
+  for (const [name, nap] of ['camel', 'cat', 'dog'].flatMap((name) => [
+    [name, null],
+    [name, 'roll'],
+  ])) {
     const d = animal.createAnimal(() => 0.5)
     animal.setAnimal(d, name)
     animal.frame(d, 0, 64)
@@ -705,9 +715,21 @@ test('the dream bubble’s puffs stand apart from its ring', () => {
     const px = pixelsOf(drawScene(f, 80), 80)
     const bubble = f.effects.find((fx) => fx.kind === 'bubble')
     // A puff has no other bubble pixel next to it, even on a diagonal
-    for (const [x, y] of [[bubble.x - 1, bubble.y - 1], [bubble.x - 3, bubble.y - 2]]) {
+    for (const [x, y] of [
+      [bubble.x - 1, bubble.y - 1],
+      [bubble.x - 3, bubble.y - 2],
+    ]) {
       expect(px[y][x]).toBe(COLORS.bubble)
-      for (const [dx, dy] of [[-1, -1], [0, -1], [1, -1], [-1, 0], [1, 0], [-1, 1], [0, 1], [1, 1]]) {
+      for (const [dx, dy] of [
+        [-1, -1],
+        [0, -1],
+        [1, -1],
+        [-1, 0],
+        [1, 0],
+        [-1, 1],
+        [0, 1],
+        [1, 1],
+      ]) {
         expect(px[y + dy][x + dx]).not.toBe(COLORS.bubble)
       }
     }
@@ -743,7 +765,14 @@ test('the cat’s tail tip keeps its outline when it lies down or rolls over', (
 })
 
 test('the cat’s tail tip keeps its outline at the top of a bow', () => {
-  const frame = { animal: 'cat', pose: 'bow', head: { eye: 'open', ear: 'up', mouth: 'open' }, wag: 1, x: 20, effects: [] }
+  const frame = {
+    animal: 'cat',
+    pose: 'bow',
+    head: { eye: 'open', ear: 'up', mouth: 'open' },
+    wag: 1,
+    x: 20,
+    effects: [],
+  }
   const px = pixelsOf(drawScene(frame, 40), 40)
   for (const c of px[0]) if (c >= 0) expect(c).toBe(COLORS.k)
 })
@@ -857,7 +886,9 @@ test('the animal eats its food from the near end', () => {
   animal.noteTreat(d, 0, 'feed')
   const BONE = 0xf0ead8
   const span = (now: number) => {
-    const xs = pixelsOf(drawScene(animal.frame(d, now, 64), 64), 64).flatMap((row) => row.flatMap((c, x) => (c === BONE ? [x] : [])))
+    const xs = pixelsOf(drawScene(animal.frame(d, now, 64), 64), 64).flatMap((row) =>
+      row.flatMap((c, x) => (c === BONE ? [x] : [])),
+    )
     return [Math.min(...xs), Math.max(...xs)]
   }
   const whole = span(125)

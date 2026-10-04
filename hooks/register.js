@@ -98,7 +98,8 @@ export function register(on) {
     let outcome = 'error'
     try {
       const result = await next(e)
-      const rejected = result?.isError && typeof result.text === 'string' && REJECTED.some((s) => result.text.startsWith(s))
+      const rejected =
+        result?.isError && typeof result.text === 'string' && REJECTED.some((s) => result.text.startsWith(s))
       outcome = result?.deny || rejected ? 'denied' : result?.isError ? 'error' : 'ok'
       return result
     } finally {
@@ -124,7 +125,8 @@ export function register(on) {
         return {}
       }
       change(animal.noteTreat, now, arg)
-      if (hasRoom() === false) $.ui.toast(`The ${d.animal} shows only in a terminal with at least ${MIN_ROWS} rows free above the prompt.`)
+      if (hasRoom() === false)
+        $.ui.toast(`The ${d.animal} shows only in a terminal with at least ${MIN_ROWS} rows free above the prompt.`)
       return {}
     }
     if (isAnimal(arg)) {

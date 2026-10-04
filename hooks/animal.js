@@ -1,6 +1,16 @@
 // What the animal is doing at a given moment. register.js tells it about turns
 // and tool calls, and asks for a frame on every redraw. Pure: no mods API.
-import { CENTER, DEFAULT_ANIMAL, ANIMAL_W, SCENE_PX, YOUNGSTER_W, animalName, animalOf, foodSpan, headTopRow } from './scene.js'
+import {
+  CENTER,
+  DEFAULT_ANIMAL,
+  ANIMAL_W,
+  SCENE_PX,
+  YOUNGSTER_W,
+  animalName,
+  animalOf,
+  foodSpan,
+  headTopRow,
+} from './scene.js'
 
 const Z_COLOR = 0x8fa8c8
 const BANG_COLOR = 0xf4c430
@@ -267,7 +277,13 @@ export function frame(d, now, columns) {
   }
   let f
   if (walking) f = walkingFrame(now, HOME_SPEED)
-  else f = d.reaction !== null ? reactionFrame(d, now, home, columns) : d.working ? workFrame(d, now, home, left, right) : napFrame(d, now, home)
+  else
+    f =
+      d.reaction !== null
+        ? reactionFrame(d, now, home, columns)
+        : d.working
+          ? workFrame(d, now, home, left, right)
+          : napFrame(d, now, home)
   f.x = f.x ?? xAt(d, now)
   f.flip = f.flip ?? facesLeft(d, now)
   f.animal = d.animal
@@ -285,7 +301,13 @@ function walkTo(d, now, target, speed, head = ALERT, flip = undefined) {
 }
 
 function walkingFrame(now, speed, head = ALERT) {
-  return { pose: 'stand', head, legPhase: Math.floor(now / (speed > 10 ? 70 : 140)), wag: blink(now, 300) ? 1 : 0, effects: [] }
+  return {
+    pose: 'stand',
+    head,
+    legPhase: Math.floor(now / (speed > 10 ? 70 : 140)),
+    wag: blink(now, 300) ? 1 : 0,
+    effects: [],
+  }
 }
 
 // Where the animal's head is in the scene, for placing z's, '!', and so on
@@ -317,7 +339,13 @@ function resolveEffects(f, now) {
   const out = []
   for (const fx of f.effects ?? []) {
     if (fx.kind === 'headText') {
-      out.push({ kind: 'text', text: fx.text, x: spot.x + (f.flip ? -fx.dx - fx.text.length + 1 : fx.dx), y: fx.y ?? above, color: fx.color })
+      out.push({
+        kind: 'text',
+        text: fx.text,
+        x: spot.x + (f.flip ? -fx.dx - fx.text.length + 1 : fx.dx),
+        y: fx.y ?? above,
+        color: fx.color,
+      })
     } else if (fx.kind === 'zs') {
       // Each z rises from above the head to the top row of the band, growing
       // into a Z halfway up
@@ -410,7 +438,8 @@ function napFrame(d, now, home) {
       if (t > 1000) addZs(f)
       break
     case 'circle':
-      if (f.pose === 'stand') Object.assign(f, { head: ALERT, legPhase: Math.floor(t / 140), wag: blink(t, 300) ? 1 : 0 })
+      if (f.pose === 'stand')
+        Object.assign(f, { head: ALERT, legPhase: Math.floor(t / 140), wag: blink(t, 300) ? 1 : 0 })
       break
     case 'oneEye':
       f.head = { ...SLEEPING, eye: t > 250 && t < 1700 ? 'open' : 'closed' }
@@ -438,7 +467,11 @@ function reactionFrame(d, now, home, columns) {
       if (t < 800) return { pose: 'bow', head: { ...ALERT, mouth: 'open' }, wag: blink(t, 160) ? 1 : 0, effects: [] }
       return { pose: 'sit', head: ALERT, wag: 1, effects: [] }
     case 'oops': {
-      const f = { pose: d.tools.length > 0 ? 'stand' : 'sit', head: { eye: 'open', ear: t < 600 ? 'up' : 'down', mouth: 'shut' }, effects: [] }
+      const f = {
+        pose: d.tools.length > 0 ? 'stand' : 'sit',
+        head: { eye: 'open', ear: t < 600 ? 'up' : 'down', mouth: 'shut' },
+        effects: [],
+      }
       f.dy = t < 300 ? -2 : 0
       if (t < 900) text(f, '!', 1, 1, BANG_COLOR)
       return f
@@ -446,7 +479,12 @@ function reactionFrame(d, now, home, columns) {
     case 'droop':
       return { pose: 'sit', head: { eye: 'open', ear: 'down', mouth: 'shut' }, headDy: 1, wag: -1, effects: [] }
     case 'happy': {
-      const f = { pose: 'sit', head: { eye: 'open', ear: 'up', mouth: tongueOr(d, 'open') }, wag: blink(t, 120) ? 2 : 0, effects: [] }
+      const f = {
+        pose: 'sit',
+        head: { eye: 'open', ear: 'up', mouth: tongueOr(d, 'open') },
+        wag: blink(t, 120) ? 2 : 0,
+        effects: [],
+      }
       f.flip = t > 500 && t < 1000
       f.effects.push({ kind: 'headHeart', dx: 8, y: Math.max(0, 8 - Math.floor(t / 200)) })
       return f
@@ -467,16 +505,34 @@ function reactionFrame(d, now, home, columns) {
       }
       const flip = sideThatFits(facesLeft(d, now), fits)
       if (t < 2800) {
-        const f = { flip, pose: 'stand', head: { eye: 'open', ear: 'down', mouth: blink(t, 220) ? 'open' : 'shut' }, headLow: true, wag: blink(t, 300) ? 1 : 0, effects: [] }
+        const f = {
+          flip,
+          pose: 'stand',
+          head: { eye: 'open', ear: 'down', mouth: blink(t, 220) ? 'open' : 'shut' },
+          headLow: true,
+          wag: blink(t, 300) ? 1 : 0,
+          effects: [],
+        }
         f.effects.push({ kind: 'food', left: 1 - Math.floor(t / 700) / 4 })
         return f
       }
-      const f = { flip, pose: 'sit', head: { eye: 'closed', ear: 'up', mouth: blink(t, 160) ? tongueOr(d, 'open') : 'shut' }, wag: 2, effects: [] }
+      const f = {
+        flip,
+        pose: 'sit',
+        head: { eye: 'closed', ear: 'up', mouth: blink(t, 160) ? tongueOr(d, 'open') : 'shut' },
+        wag: 2,
+        effects: [],
+      }
       f.effects.push({ kind: 'headHeart', dx: 8, y: Math.max(0, 8 - Math.floor((t - 2800) / 200)) })
       return f
     }
     case 'pet': {
-      const f = { pose: 'belly', head: { eye: 'open', ear: 'down', mouth: tongueOr(d, 'open') }, paddle: blink(t, 200) ? 1 : 0, effects: [] }
+      const f = {
+        pose: 'belly',
+        head: { eye: 'open', ear: 'down', mouth: tongueOr(d, 'open') },
+        paddle: blink(t, 200) ? 1 : 0,
+        effects: [],
+      }
       f.effects.push({ kind: 'headHeart', dx: 0, y: Math.max(0, 5 - Math.floor((t % 1300) / 260)) })
       return f
     }
@@ -508,7 +564,11 @@ function workFrame(d, now, home, left, right) {
       // The ball bounces along ahead of the animal
       const ahead = facesLeft(d, now) ? -1 : 1
       const bounce = Math.abs(Math.sin(now / 160))
-      f.effects.push({ kind: 'ball', x: Math.round(xAt(d, now)) + ahead * 15 - 1, y: SCENE_PX - 3 - Math.round(bounce * 5) })
+      f.effects.push({
+        kind: 'ball',
+        x: Math.round(xAt(d, now)) + ahead * 15 - 1,
+        y: SCENE_PX - 3 - Math.round(bounce * 5),
+      })
     } else {
       f.headLow = true
       if (now % 3000 < 700) text(f, 'snf', 3, 6, SNIFF_COLOR)
@@ -523,11 +583,22 @@ function workFrame(d, now, home, left, right) {
 
   switch (activity) {
     case 'dig': {
-      const f = { pose: 'stand', head, headLow: true, pawUp: blink(now, 160), wag: blink(now, 240) ? 1 : 0, effects: [] }
+      const f = {
+        pose: 'stand',
+        head,
+        headLow: true,
+        pawUp: blink(now, 160),
+        wag: blink(now, 240) ? 1 : 0,
+        effects: [],
+      }
       // Dirt flies back between the legs
       for (let i = 0; i < 5; i++) {
         const phase = (now / 550 + i / 5) % 1
-        f.effects.push({ kind: 'dirt', x: Math.round(home - 6 - phase * 16), y: Math.round(SCENE_PX - 2 - Math.sin(phase * Math.PI) * 8) })
+        f.effects.push({
+          kind: 'dirt',
+          x: Math.round(home - 6 - phase * 16),
+          y: Math.round(SCENE_PX - 2 - Math.sin(phase * Math.PI) * 8),
+        })
       }
       return f
     }
@@ -558,9 +629,11 @@ function sideThatFits(preferred, fits) {
 function addYoungsters(d, now, f, columns) {
   const youngsters = Math.min(3, d.tools.filter((t) => t.activity === 'youngster').length)
   // Where youngster i's sprite starts, to the animal's left or right
-  const leftOf = (onLeft, i) => Math.round(f.x) + (onLeft ? -(CENTER + 4 + i * 10) - (YOUNGSTER_W - 1) : CENTER + 4 + i * 10)
+  const leftOf = (onLeft, i) =>
+    Math.round(f.x) + (onLeft ? -(CENTER + 4 + i * 10) - (YOUNGSTER_W - 1) : CENTER + 4 + i * 10)
   // Its outline adds a column on each side
-  const fits = (onLeft) => leftOf(onLeft, youngsters - 1) >= 0 && leftOf(onLeft, youngsters - 1) + YOUNGSTER_W + 2 <= columns
+  const fits = (onLeft) =>
+    leftOf(onLeft, youngsters - 1) >= 0 && leftOf(onLeft, youngsters - 1) + YOUNGSTER_W + 2 <= columns
   const onLeft = sideThatFits(!f.flip, fits)
   for (let i = 0; i < youngsters; i++) {
     const hop = Math.floor(now / 200 + i) % 2
