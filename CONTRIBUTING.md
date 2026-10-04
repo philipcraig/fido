@@ -25,6 +25,28 @@ without a terminal, pass the output file and an animal:
 node dev/preview.mjs sheet.png cat
 ```
 
+## Drive it in a live session
+
+`dev/live.sh` runs Claude Code with the plugin loaded in a detached tmux
+session, so the band can be driven and captured from a script, or by an agent
+with no terminal of its own. It needs tmux, and for `snap`, Playwright with
+Chromium:
+
+```bash
+dev/live.sh start --permission-mode acceptEdits
+dev/live.sh send '/pet feed'
+dev/live.sh snap feed.png 14  # the last 14 rows: the band, prompt and footer
+dev/live.sh send 'Run the bash command "sleep 5"'
+dev/live.sh keys 1            # answers a permission prompt
+dev/live.sh text              # prints the screen as plain text
+dev/live.sh stop
+```
+
+Claude Code runs in a scratch folder under `$TMPDIR`, so its edits stay out of
+the repository. Inside a Claude Code cloud session it also gets a config
+folder of its own, so it skips the login and theme screens. A permission prompt
+covers the band while it is open.
+
 ## Code style
 
 Code is formatted with Prettier. To check formatting, or fix it:
@@ -48,4 +70,6 @@ It checks formatting with Prettier, validates the manifests with
   into `Raster` cells.
 - `tests/`: the tests.
 - `dev/preview.mjs`: renders a scripted session to a PNG contact sheet.
+- `dev/live.sh`: runs Claude Code with the plugin in tmux, to drive and capture.
+- `dev/snap.mjs`: renders a captured terminal screen to a PNG.
 - `.github/workflows/ci.yml`: the CI workflow.
