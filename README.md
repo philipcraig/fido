@@ -62,4 +62,6 @@ While Claude works, the animal reacts to what Claude is doing:
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for development instructions
+See [CONTRIBUTING.md](CONTRIBUTING.md) for development instructions, and
+[docs/adding-an-animal.md](docs/adding-an-animal.md) to add a new animal with
+Claude Code
