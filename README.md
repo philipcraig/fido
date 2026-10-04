@@ -65,26 +65,11 @@ While Claude works, the animal reacts to what Claude is doing:
 ## What it runs and stores
 
 The mod is a hooks module, `hooks/register.js`, that runs inside Claude Code.
-Its hooks only watch, except where noted, and each passes the event on
-unchanged:
-
-- `session.start`: reads the two saved settings, starts the redraw timer, and
-  registers the `/pet` command.
-- `turn.start` and `turn.complete`: note when Claude starts and finishes a
-  turn, to wake the animal and settle it back down.
-- `tool.call`: notes which tool Claude calls and whether the call succeeds,
-  fails or is refused, to choose what the animal does. It doesn't change the
-  call or its result.
-- `prompt.edit`: notes typing in the prompt, to twitch a sleeping animal's ear.
-- `command.run`, for `/pet` only: answers the mod's own `/pet` command, as the
-  [Commands](#commands) list describes. It handles no other command, and
-  answers `/pet` the same way whether you type it or other code runs it.
-- `ui.render`, for the band above the prompt: draws the animal there, above
-  anything other mods draw in the band.
-
-It stores two settings with Claude Code's plugin storage: whether the animal is
-shown, and which animal it is. It sends nothing over the network, reads and
-writes no files, runs no commands, and calls no models.
+It watches Claude's turns and tool calls only to choose what the animal does,
+and draws the animal in the band above the prompt. It stores two settings with
+Claude Code's plugin storage: whether the animal is shown, and which animal it
+is. It sends nothing over the network, reads and writes no files, runs no
+commands, and calls no models.
 
 ## License
 
