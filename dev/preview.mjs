@@ -25,11 +25,11 @@ function cellsToPixels(cells) {
     for (let x = 0; x < COLUMNS; x++) {
       const i = (row * COLUMNS + x) * 3
       const [ch, fg, bg] = [cells[i], cells[i + 1], cells[i + 2]]
-      if (ch === 0x2580) top.push(color(fg)), bottom.push(color(bg))
-      else if (ch === 0x2584) top.push(color(bg)), bottom.push(color(fg))
-      else if (ch === 32) top.push(BG), bottom.push(BG)
+      if (ch === 0x2580) (top.push(color(fg)), bottom.push(color(bg)))
+      else if (ch === 0x2584) (top.push(color(bg)), bottom.push(color(fg)))
+      else if (ch === 32) (top.push(BG), bottom.push(BG))
       // A text cell: show its color in the top half only, to mark the glyph
-      else top.push(color(fg)), bottom.push(BG)
+      else (top.push(color(fg)), bottom.push(BG))
     }
     px.push(top, bottom)
   }

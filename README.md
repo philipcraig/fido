@@ -35,19 +35,19 @@ and the dog of a bone or a squirrel. Typing in the prompt makes its ear twitch.
 
 While Claude works, the animal reacts to what Claude is doing:
 
-| Claude is | The animal |
-| :- | :- |
-| Starting a turn | Wakes up and stretches, if it was lying down |
-| Thinking or writing | Sits and listens, tilting its head |
-| Reading or searching (`Read`, `Grep`, `Glob`) | Sniffs back and forth, nose down |
-| Editing (`Edit`, `Write`) | Digs, with dirt flying |
-| Running a shell command (`Bash`) | Chases a bouncing ball |
-| Calling the web or an MCP tool | Points, one paw raised |
-| Running subagents | Plays with one baby for each subagent, up to three |
-| Hitting a failed tool call | Jumps with a `!`, then droops its ears |
-| Interrupted, or refused a tool call | Droops its ears and head |
-| Working for more than two minutes | Pants |
-| Finishing a turn | Wags with a heart, yawns, and lies down to sleep |
+| Claude is                                     | The animal                                         |
+| :-------------------------------------------- | :------------------------------------------------- |
+| Starting a turn                               | Wakes up and stretches, if it was lying down       |
+| Thinking or writing                           | Sits and listens, tilting its head                 |
+| Reading or searching (`Read`, `Grep`, `Glob`) | Sniffs back and forth, nose down                   |
+| Editing (`Edit`, `Write`)                     | Digs, with dirt flying                             |
+| Running a shell command (`Bash`)              | Chases a bouncing ball                             |
+| Calling the web or an MCP tool                | Points, one paw raised                             |
+| Running subagents                             | Plays with one baby for each subagent, up to three |
+| Hitting a failed tool call                    | Jumps with a `!`, then droops its ears             |
+| Interrupted, or refused a tool call           | Droops its ears and head                           |
+| Working for more than two minutes             | Pants                                              |
+| Finishing a turn                              | Wags with a heart, yawns, and lies down to sleep   |
 
 ## Commands
 

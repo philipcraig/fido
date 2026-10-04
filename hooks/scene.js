@@ -439,7 +439,12 @@ const POSES = {
     return [
       (c) => drawTail(c, a, P, OX + 1, GY - 1, OX - 4, GY),
       (c) => {
-        for (const [x, k] of [[3, kick], [6, -kick], [12, -kick], [15, kick]]) {
+        for (const [x, k] of [
+          [3, kick],
+          [6, -kick],
+          [12, -kick],
+          [15, kick],
+        ]) {
           c.line(OX + x, GY - 3, OX + x + k, GY - 7, P.b, 2)
           c.rect(OX + x + k, GY - 8, OX + x + k + 1, GY - 8, P.w)
         }
@@ -452,10 +457,11 @@ const POSES = {
         // Upside down head, resting on the ground
         const h = new Canvas(10, 8)
         drawHead(h, 0, 0, f.head, a, P)
-        for (let y = 0; y < 8; y++) for (let x = 0; x < 10; x++) {
-          const col = h.get(x, y)
-          if (col >= 0) c.set(OX + 16 + x, GY - 6 + (7 - y), col)
-        }
+        for (let y = 0; y < 8; y++)
+          for (let x = 0; x < 10; x++) {
+            const col = h.get(x, y)
+            if (col >= 0) c.set(OX + 16 + x, GY - 6 + (7 - y), col)
+          }
       },
     ]
   },
@@ -602,7 +608,10 @@ export function foodSpan(a, x, flip) {
 function drawFood(scene, fx, a) {
   const { rows, colors } = DREAMS[a.dreams.food]
   const w = rows[0].length
-  const item = spriteCanvas(rows.map((r) => r.slice(w - Math.ceil(w * fx.left))), colors)
+  const item = spriteCanvas(
+    rows.map((r) => r.slice(w - Math.ceil(w * fx.left))),
+    colors,
+  )
   const [first, last] = foodSpan(a, fx.x, fx.flip)
   const slide = Math.max(0, -first) - Math.max(0, last - (scene.w - 1))
   const x0 = (fx.flip ? first : last - item.w + 1) + slide
