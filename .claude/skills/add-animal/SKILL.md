@@ -39,6 +39,12 @@ yourself and say what you chose. Stop and ask only if the name can't be used
 (see step 1). The person can redirect you after they see the result, and you
 push their changes to the same pull request.
 
+Run every command from the repository root, written out in full as this skill
+shows it: no `cd`, no shell variables, and no loops. Chaining with `&&` is
+fine. This skill pre-approves the commands it needs, so the person isn't asked
+about each one, but a command with a `cd`, a variable or a loop can't be
+matched and needs their approval.
+
 Keep every image you render in `.preview/` at the repository root. Git ignores
 that folder, and you can read the images there with the Read tool to see the
 art.
@@ -89,7 +95,7 @@ mkdir -p .preview
 node dev/preview.mjs .preview/before-dog.png dog
 ```
 
-Do this for each existing animal.
+Write one such command for each existing animal.
 
 ## 5. Add the animal
 
@@ -140,7 +146,8 @@ node dev/preview.mjs .preview/after-dog.png dog
 cmp .preview/before-dog.png .preview/after-dog.png
 ```
 
-If any file differs, find what changed it and fix that.
+Write the pair of commands out for each existing animal. If any file differs,
+find what changed it and fix that.
 
 ## 8. Cover it in the tests
 
