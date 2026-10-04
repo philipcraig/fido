@@ -62,6 +62,19 @@ While Claude works, the animal reacts to what Claude is doing:
 - `/pet camel`, `/pet cat`, `/pet dog`, `/pet rocky`: switches the animal. The choice
   persists between sessions.
 
+## What it runs and stores
+
+The mod is a hooks module, `hooks/register.js`, that runs inside Claude Code.
+It watches Claude's turns and tool calls only to choose what the animal does,
+and draws the animal in the band above the prompt. It stores two settings with
+Claude Code's plugin storage: whether the animal is shown, and which animal it
+is. It sends nothing over the network, reads and writes no files, runs no
+commands, and calls no models.
+
+## License
+
+MIT. See [LICENSE](LICENSE).
+
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for development instructions, and
