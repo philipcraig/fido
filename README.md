@@ -3,7 +3,7 @@
 `snoozing-pet`, a Claude Code mod that puts a pixel-art animal in the band
 above the prompt: a dog by default, or a camel, or a solid gray cat. The animal
 snoozes while Claude is idle, and wakes up to react while Claude works. Tested
-with Claude Code v2.1.281 in a terminal. The Desktop app gets no animal.
+with Claude Code v2.1.289 in a terminal. The Desktop app gets no animal.
 
 ![Claude Code fixes a failing test while the dog sniffs, chases a ball, jumps at the failure, and goes back to sleep](media/demo.gif)
 
