@@ -64,11 +64,11 @@ export function framesFor(name) {
   at(300, 'turn done: happy')
   at(2300, 'settling down')
   animal.noteTreat(d, now, 'pet')
-  at(500, '/fido pet')
+  at(500, '/pet pet')
   at(2700, 'settling back down')
   animal.noteTreat(d, now, 'feed')
-  at(300, '/fido feed: first bite')
-  at(1500, '/fido feed: half eaten')
-  at(1500, '/fido feed: licking its lips')
+  at(300, '/pet feed: first bite')
+  at(1500, '/pet feed: half eaten')
+  at(1500, '/pet feed: licking its lips')
   return frames
 }

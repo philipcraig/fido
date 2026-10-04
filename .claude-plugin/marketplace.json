@@ -1,5 +1,5 @@
 {
-  "name": "fido",
+  "name": "pet",
   "owner": { "name": "Philip Craig" },
   "description": "The snoozing-dog Claude Code mod",
   "plugins": [

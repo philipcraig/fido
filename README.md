@@ -1,4 +1,4 @@
-# fido
+# pet
 
 `snoozing-dog`, a Claude Code mod that puts a pixel-art animal in the band
 above the prompt: a dog by default, or a camel, or a solid gray cat. The animal
@@ -13,8 +13,8 @@ This repository is also a plugin marketplace. To install the mod for every
 session:
 
 ```bash
-claude plugin marketplace add philipcraig/fido
-claude plugin install snoozing-dog@fido
+claude plugin marketplace add philipcraig/pet
+claude plugin install snoozing-dog@pet
 ```
 
 To try it for one session, clone this repository, then load the clone's
@@ -22,7 +22,7 @@ directory:
 
 ```bash
 export CLAUDE_CODE_ENABLE_FUNCTION_HOOKS=1
-claude --plugin-dir ./fido
+claude --plugin-dir ./pet
 ```
 
 Builds older than v2.1.287 need `CLAUDE_CODE_ENABLE_FUNCTION_HOOKS=1`, both to
@@ -57,12 +57,12 @@ While Claude works, the animal reacts to what Claude is doing:
 
 ## Commands
 
-- `/fido`: shows or hides the animal. The choice persists between sessions.
-- `/fido on`, `/fido off`: shows or hides the animal.
-- `/fido pet`: the animal rolls over for a belly rub.
-- `/fido feed`: the animal eats its favorite food: a fish for the cat, a bone
+- `/pet`: shows or hides the animal. The choice persists between sessions.
+- `/pet on`, `/pet off`: shows or hides the animal.
+- `/pet pet`: the animal rolls over for a belly rub.
+- `/pet feed`: the animal eats its favorite food: a fish for the cat, a bone
   for the dog, a cactus for the camel.
-- `/fido camel`, `/fido cat`, `/fido dog`: switches the animal. The choice
+- `/pet camel`, `/pet cat`, `/pet dog`: switches the animal. The choice
   persists between sessions.
 
 ## Files

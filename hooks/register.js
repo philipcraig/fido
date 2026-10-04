@@ -73,7 +73,7 @@ export function register(on) {
       $.ui.invalidate('ui.render')
     })
     await $.command.register({
-      name: 'fido',
+      name: 'pet',
       description: 'Show, hide, pet, feed, or change the animal above the prompt',
       argumentHint: `[${OPTIONS.join('|')}]`,
       immediate: true,
@@ -112,15 +112,15 @@ export function register(on) {
     return next(e)
   })
 
-  on('command.run', { command: 'fido' }, async ($, e) => {
+  on('command.run', { command: 'pet' }, async ($, e) => {
     const arg = (e.args ?? '').trim().toLowerCase()
     if (arg !== '' && !OPTIONS.includes(arg)) {
-      $.ui.toast(`Unknown option "${arg}". Try /fido [${OPTIONS.join('|')}].`)
+      $.ui.toast(`Unknown option "${arg}". Try /pet [${OPTIONS.join('|')}].`)
       return {}
     }
     if (arg === 'pet' || arg === 'feed') {
       if (!enabled) {
-        $.ui.toast(`The ${d.animal} is hidden. Run /fido on to bring it back.`)
+        $.ui.toast(`The ${d.animal} is hidden. Run /pet on to bring it back.`)
         return {}
       }
       change(animal.noteTreat, now, arg)
@@ -140,7 +140,7 @@ export function register(on) {
     await Promise.all([clockNow($), $.store.set('enabled', show)])
     enabled = show
     $.ui.invalidate('ui.render')
-    $.ui.toast(enabled ? `The ${d.animal} is back.` : `The ${d.animal} is hidden. Run /fido to bring it back.`)
+    $.ui.toast(enabled ? `The ${d.animal} is back.` : `The ${d.animal} is hidden. Run /pet to bring it back.`)
     return {}
   })
 
