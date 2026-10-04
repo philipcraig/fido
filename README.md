@@ -21,6 +21,7 @@ To try it for one session, clone this repository, then load the clone's
 directory:
 
 ```bash
+git clone https://github.com/philipcraig/pet
 claude --plugin-dir ./pet
 ```
 
@@ -59,16 +60,6 @@ While Claude works, the animal reacts to what Claude is doing:
 - `/pet camel`, `/pet cat`, `/pet dog`: switches the animal. The choice
   persists between sessions.
 
-## Files
+## Contributing
 
-- `hooks/register.js`: the hooks module. It handles events and draws the band.
-- `hooks/animal.js`: picks the animal's pose from Claude's activity and the time.
-- `hooks/scene.js`: defines each animal, draws the pixel art, and packs it
-  into `Raster` cells.
-- `tests/`: run with `claude plugin test` from this directory.
-- `dev/preview.mjs`: renders a scripted session to a PNG contact sheet, as in
-  `node dev/preview.mjs sheet.png cat`.
-- `.github/workflows/ci.yml`: on each push to `main` and each pull request,
-  checks formatting with Prettier, validates the manifests, and runs the
-  tests. To check formatting locally, run `npx prettier@3.8.1 --check .`, or
-  `--write` to fix it.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for development instructions
