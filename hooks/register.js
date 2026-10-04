@@ -1,5 +1,5 @@
-// A pixel-art animal in the band above the prompt: a dog, a camel, or a solid
-// gray cat. It snoozes while Claude is idle, and wakes up and reacts while Claude
+// A pixel-art animal in the band above the prompt: a dog, a camel, a solid
+// gray cat, or Rocky the Eridian. It snoozes while Claude is idle, and wakes up and reacts while Claude
 // works: it sniffs around during reads and searches, digs during edits, chases
 // a ball during shell commands, points during web requests, and has babies
 // over while subagents run.

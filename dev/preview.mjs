@@ -1,5 +1,5 @@
 // Renders frames of the animal to a PNG contact sheet, so the art can be checked
-// without a terminal. Usage: node dev/preview.mjs out.png [camel|cat|dog]
+// without a terminal. Usage: node dev/preview.mjs out.png [camel|cat|dog|rocky]
 import { writeFileSync } from 'node:fs'
 import { deflateSync, crc32 } from 'node:zlib'
 import { drawScene, isAnimal, DEFAULT_ANIMAL, SCENE_ROWS, DEFAULT_COLOR } from '../hooks/scene.js'

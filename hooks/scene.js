@@ -30,7 +30,9 @@ export const COLORS = {
 
 // What sets one animal apart from another: its colors, head, ears, babies
 // (a body for each step, or one for both), and the two things it dreams of. Poses read the rest of their shape from
-// the flags (hump, legs, longTail, collar).
+// the flags (hump, legs, longTail, collar). An eridian has no head, ears or
+// tail: ERIDIAN_POSES draw it instead, as a carapace on five limbs, one of
+// which it raises where other animals prick up their ears.
 export const ANIMALS = {
   camel: {
     colors: {
@@ -124,6 +126,24 @@ export const ANIMALS = {
     sound: 'wuf',
     dreams: { food: 'bone', prey: 'squirrel' },
   },
+  rocky: {
+    colors: {
+      b: 0x8a8370, // carapace
+      d: 0x5f5a49, // mottling and underside
+      l: 0x6b6450, // limbs
+      w: 0xc9c1a6, // feet and fingers
+      n: 0x2e2b22, // vent
+      ball: 0xd9b84a, // xenonite
+    },
+    eridian: true,
+    youngster: [
+      ['.........', '...bbbb..', '.bbdbbbb.', 'bbbbbbdbb', '.bdbbbbb.'],
+      ['......w.w', '...bbbbl.', '.bbdbbbb.', 'bbbbbbdbb', '.bdbbbbb.'],
+    ],
+    tongue: false,
+    sound: '♪♫♪',
+    dreams: { food: 'astrophage', prey: 'star' },
+  },
 }
 
 export const DEFAULT_ANIMAL = 'dog'
@@ -150,14 +170,16 @@ function colorsOf(f) {
 }
 
 // The first and last rows of the head sprite that the head or an ear, in any
-// position, draws on
+// position, draws on. An eridian has neither.
 const REACH = Object.fromEntries(
-  Object.entries(ANIMALS).map(([name, a]) => {
-    const rows = Object.entries(a.ears).flatMap(([ear, sprite]) => sprite.map((row, j) => [row, a.earRow[ear] + j]))
-    rows.push(...a.head.map((row, j) => [row, j]))
-    const drawn = rows.filter(([row]) => /[^.]/.test(row)).map(([, j]) => j)
-    return [name, { top: Math.min(...drawn), bottom: Math.max(...drawn) }]
-  }),
+  Object.entries(ANIMALS)
+    .filter(([, a]) => !a.eridian)
+    .map(([name, a]) => {
+      const rows = Object.entries(a.ears).flatMap(([ear, sprite]) => sprite.map((row, j) => [row, a.earRow[ear] + j]))
+      rows.push(...a.head.map((row, j) => [row, j]))
+      const drawn = rows.filter(([row]) => /[^.]/.test(row)).map(([, j]) => j)
+      return [name, { top: Math.min(...drawn), bottom: Math.max(...drawn) }]
+    }),
 )
 
 // Things an animal can dream of, with the palette letter each sprite uses
@@ -168,6 +190,10 @@ const DREAMS = {
   mouse: { rows: ['....ss', 's.ssss', '.ssss.'], colors: { s: 0x8a8a8a } },
   cactus: { rows: ['c.c..', 'ccc.c', '..ccc', '..c..'], colors: { c: 0x4f9a3a } },
   water: { rows: ['.w.', 'www', 'www', '.w.'], colors: { w: 0x5aa9e6 } },
+  // A cell of the star-eating microbe, glowing at its rim
+  astrophage: { rows: ['.ggg.', 'gaaag', 'gaaag', '.ggg.'], colors: { a: 0x3a1c2a, g: 0xe0603a } },
+  // A star, such as 40 Eridani, home
+  star: { rows: ['..s..', 'sssss', '.sss.', 's...s'], colors: { s: 0xf4d35e } },
 }
 const HEART = ['h.h', 'hhh', '.h.']
 // A youngster's legs on each step of its hop, under its body
@@ -286,6 +312,7 @@ function headAt(f, a) {
 // placing z's and thought bubbles over it
 export function headTopRow(f) {
   const name = animalName(f.animal)
+  if (ANIMALS[name].eridian) return eridianTop(f) - 1
   // On its back the head is upside down, resting on the ground
   if (f.pose === 'belly') return GY - 6 + (7 - REACH[name].bottom) - 1
   return headAt(f, ANIMALS[name])[1] + REACH[name].top - 1
@@ -492,6 +519,181 @@ const POSES = {
   },
 }
 
+// The top row of an eridian's carapace, or of its raised feet when it lies on
+// its back, in frame f
+function eridianTop(f) {
+  const tilt = f.headDy ?? 0
+  return {
+    stand: 2 + (f.headLow ? 2 : 0) + tilt,
+    sit: 4 + tilt,
+    lie: 8,
+    belly: 5,
+    bow: 2,
+  }[f.pose]
+}
+
+// An eridian's carapace: a mottled dome rx wide, with its top row at top. On
+// its back, the darker underside is uppermost.
+function drawCarapace(c, P, cx, top, rx, ry, upsideDown = false) {
+  const cy = top + ry - 0.5
+  c.ellipse(cx + 0.5, cy, rx, ry, P.b)
+  c.ellipse(cx + 0.5, upsideDown ? top + 0.2 : top + 2 * ry - 0.7, rx - 1.5, 0.9, P.d, true)
+  const spots = [
+    [-4, 1],
+    [2, 1],
+    [-1, 2],
+    [4, 2],
+    [-5, 3],
+    [1, 3],
+    [5, 3],
+    [-2, 4],
+  ]
+  for (const [dx, dy] of spots) {
+    const y = upsideDown ? top + 2 * ry - 1 - dy : top + dy
+    if (c.get(cx + dx, y) >= 0) c.set(cx + dx, y, P.d)
+  }
+}
+
+// A jointed limb from the hip through the knee to a foot drawn outward
+function drawLimb(c, P, hip, knee, foot) {
+  c.line(...hip, ...knee, P.l)
+  c.line(...knee, ...foot, P.l)
+  const out = foot[0] < hip[0] ? -1 : 1
+  c.set(foot[0], foot[1], P.w)
+  c.set(foot[0] + out, foot[1], P.w)
+}
+
+// The raised limb, waving its three-fingered hand above the carapace's front
+function drawArm(c, P, cx, top, ear) {
+  const wave = ear === 'flap' ? 1 : 0
+  const wrist = [cx + 11 + wave, top]
+  c.line(cx + 5, top + 3, cx + 9, top + 2, P.l)
+  c.line(cx + 9, top + 2, ...wrist, P.l)
+  const [wx, wy] = wrist
+  c.rect(wx - 1, wy - 1, wx + 1, wy - 1, P.w)
+  for (const dx of [-2, 0, 2]) c.set(wx + dx + (dx === 0 ? 0 : wave * Math.sign(dx)), wy - 2, P.w)
+}
+
+// The vent it talks through, open on top of the carapace
+function drawVent(c, P, cx, top, head) {
+  if (head.mouth === 'open' || head.mouth === 'tongue') c.rect(cx, top, cx + 1, top, P.n)
+}
+
+// An eridian's poses, which read the same frame values as POSES
+const ERIDIAN_POSES = {
+  lie(f, a, P) {
+    const breath = f.breath ?? 0
+    const ry = 2.4 + breath * 0.4
+    const top = Math.round(GY + 0.5 - 2 * ry)
+    const paddle = f.paddle ?? 0
+    const lift = f.tailLift ?? 0
+    // Asleep, it twitches its front knee where other animals twitch an ear
+    const twitch = f.head.ear === 'down' ? 0 : 1
+    const cx = OX + 9
+    return [
+      (c) => {
+        drawLimb(c, P, [cx - 5, GY - 2], [cx - 8, GY - 4], [cx - 10, GY - lift])
+        drawLimb(c, P, [cx + 6, GY - 2], [cx + 9, GY - 4 - Math.max(paddle, twitch)], [cx + 11, GY])
+      },
+      (c) => {
+        drawCarapace(c, P, cx, top, 7, ry)
+        drawVent(c, P, cx, top, f.head)
+      },
+    ]
+  },
+
+  sit(f, a, P) {
+    const top = eridianTop(f)
+    const hip = top + 5
+    const cx = OX + 9
+    const raised = f.head.ear === 'up' || f.head.ear === 'flap'
+    const scratch = f.scratch
+    return [
+      (c) => {
+        c.line(cx, hip + 1, cx, GY, P.l)
+        drawLimb(c, P, [cx - 2, hip + 1], [cx - 4, hip + 1], [cx - 5, GY])
+        drawLimb(c, P, [cx + 3, hip + 1], [cx + 5, hip + 1], [cx + 6, GY])
+      },
+      (c) => {
+        drawCarapace(c, P, cx, top, 6.5, 3.2)
+        drawVent(c, P, cx, top, f.head)
+      },
+      (c) => {
+        if (scratch === undefined) drawLimb(c, P, [cx - 5, hip - 1], [cx - 9, hip - 4], [cx - 10, GY])
+        else drawLimb(c, P, [cx - 5, hip - 1], [cx - 9, top - 1], [cx - 4, top - 1 + scratch])
+        if (raised) drawArm(c, P, cx, top, f.head.ear)
+        else drawLimb(c, P, [cx + 6, hip - 1], [cx + 10, hip - 4], [cx + 11, GY])
+      },
+    ]
+  },
+
+  stand(f, a, P) {
+    const top = eridianTop(f)
+    const hip = top + 5
+    const cx = OX + 9
+    const swing = [0, 1, 0, -1][(f.legPhase ?? 0) % 4]
+    const paw = f.pawUp ? 2 : 0
+    const raised = f.head.ear === 'up' || f.head.ear === 'flap'
+    return [
+      (c) => {
+        c.line(cx, hip + 1, cx - swing, GY, P.l)
+        drawLimb(c, P, [cx - 2, hip + 1], [cx - 5, hip + 2], [cx - 6 + swing, GY])
+        drawLimb(c, P, [cx + 3, hip + 1], [cx + 6, hip + 2], [cx + 7 - swing, GY])
+      },
+      (c) => {
+        drawCarapace(c, P, cx, top, 6.5, 3.2)
+        drawVent(c, P, cx, top, f.head)
+      },
+      (c) => {
+        drawLimb(c, P, [cx - 5, hip - 1], [cx - 9, hip - 3], [cx - 11 - swing, GY])
+        if (raised) drawArm(c, P, cx, top, f.head.ear)
+        else drawLimb(c, P, [cx + 6, hip - 1], [cx + 10, hip - 3], [cx + 12 + swing, GY - paw])
+      },
+    ]
+  },
+
+  // Rolled onto its back with its five limbs in the air
+  belly(f, a, P) {
+    const kick = f.paddle ?? 0
+    const cx = OX + 9
+    return [
+      (c) => {
+        for (const [dx, k] of [
+          [-6, kick],
+          [-3, -kick],
+          [0, kick],
+          [3, -kick],
+          [6, kick],
+        ]) {
+          const out = Math.sign(dx)
+          drawLimb(c, P, [cx + dx, GY - 4], [cx + dx + out, GY - 6], [cx + dx + out * 2 + k, GY - 8])
+        }
+      },
+      (c) => drawCarapace(c, P, cx, GY - 4, 7, 2.4, true),
+    ]
+  },
+
+  // Rear up, front down, the start of a stretch
+  bow(f, a, P) {
+    const cx = OX + 9
+    return [
+      (c) => {
+        drawLimb(c, P, [cx - 2, GY - 4], [cx - 3, GY - 3], [cx - 4, GY])
+        drawLimb(c, P, [cx + 3, GY - 2], [cx + 6, GY - 2], [cx + 8, GY])
+      },
+      (c) => {
+        drawCarapace(c, P, cx - 2, 2, 5, 3)
+        drawCarapace(c, P, cx + 3, 5, 5, 3)
+        drawVent(c, P, cx + 3, 5, f.head)
+      },
+      (c) => {
+        drawLimb(c, P, [cx - 6, 7], [cx - 8, 7], [cx - 10, GY])
+        drawLimb(c, P, [cx + 7, GY - 3], [cx + 10, GY - 2], [cx + 12, GY])
+      },
+    ]
+  },
+}
+
 // x of the body's center inside the animal canvas, facing right
 export const CENTER = OX + 9
 
@@ -504,7 +706,7 @@ export function animalLeft(f) {
 // canvas, facing right
 function drawAnimal(f, a, P) {
   const out = new Canvas(ANIMAL_W, SCENE_PX)
-  for (const part of POSES[f.pose](f, a, P)) {
+  for (const part of (a.eridian ? ERIDIAN_POSES : POSES)[f.pose](f, a, P)) {
     const c = new Canvas(ANIMAL_W, SCENE_PX)
     part(c)
     out.over(c.outlined())

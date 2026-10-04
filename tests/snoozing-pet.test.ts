@@ -401,7 +401,7 @@ test('a dog by default, and each animal draws differently', () => {
     animal.setAnimal(d, name)
     return Array.from(drawScene(animal.frame(d, 0, 64), 64)).join()
   }
-  expect(new Set([cells('camel'), cells('cat'), cells('dog')]).size).toBe(3)
+  expect(new Set([cells('camel'), cells('cat'), cells('dog'), cells('rocky')]).size).toBe(4)
   animal.setAnimal(d, 'unicorn')
   expect(d.animal).toBe('dog')
 })
@@ -497,7 +497,7 @@ test('a standing camel keeps a clear row above its head and hump', () => {
 })
 
 test('every animal tilts its head while thinking', () => {
-  for (const name of ['camel', 'cat', 'dog']) {
+  for (const name of ['camel', 'cat', 'dog', 'rocky']) {
     const sitting = (headDy: number) => {
       const frame = {
         animal: name,
@@ -513,13 +513,30 @@ test('every animal tilts its head while thinking', () => {
   }
 })
 
+test('Rocky raises a three-fingered hand where the others prick up their ears', () => {
+  const fingers = ANIMALS.rocky.colors.w
+  const standing = (ear: string) => {
+    const frame = { animal: 'rocky', pose: 'stand', head: { eye: 'open', ear, mouth: 'shut' }, x: 20, effects: [] }
+    return pixelsOf(drawScene(frame, 40), 40)
+  }
+  const raised = (ear: string) =>
+    standing(ear)
+      .slice(0, 2)
+      .flat()
+      .filter((c) => c === fingers).length
+  expect(raised('down')).toBe(0)
+  expect(raised('up')).toBe(6)
+  expect(raised('flap')).toBe(6)
+  expect(standing('flap')).not.toEqual(standing('up'))
+})
+
 test('a frame without an animal draws the dog', () => {
   const frame = { pose: 'sit', head: { eye: 'open', ear: 'up', mouth: 'shut' }, x: 20, effects: [] }
   expect(Array.from(drawScene(frame, 40)).join()).toBe(Array.from(drawScene({ ...frame, animal: 'dog' }, 40)).join())
 })
 
 test('the z’s float clear of every sleeping animal’s head and ears', () => {
-  for (const [name, nap] of ['camel', 'cat', 'dog'].flatMap((name) => [
+  for (const [name, nap] of ['camel', 'cat', 'dog', 'rocky'].flatMap((name) => [
     [name, null],
     [name, 'roll'],
   ])) {
@@ -539,7 +556,7 @@ test('the z’s float clear of every sleeping animal’s head and ears', () => {
 })
 
 test('the sleep sound stays clear of every sleeping animal’s head and ears', () => {
-  for (const name of ['camel', 'cat', 'dog']) {
+  for (const name of ['camel', 'cat', 'dog', 'rocky']) {
     for (const nap of ['dream', 'sleepSound']) {
       const d = animal.createAnimal(() => 0.5)
       animal.setAnimal(d, name)
@@ -693,7 +710,7 @@ test('a walk the band stopped showing does not keep the animal awake', () => {
 })
 
 test('a sleeping animal always shows a big Z', () => {
-  for (const name of ['camel', 'cat', 'dog']) {
+  for (const name of ['camel', 'cat', 'dog', 'rocky']) {
     const d = animal.createAnimal(() => 0.5)
     animal.setAnimal(d, name)
     for (let now = 0; now <= 4200; now += 50) {
@@ -706,7 +723,7 @@ test('a sleeping animal always shows a big Z', () => {
 })
 
 test('the dream bubble’s puffs stand apart from its ring', () => {
-  for (const name of ['camel', 'cat', 'dog']) {
+  for (const name of ['camel', 'cat', 'dog', 'rocky']) {
     const d = animal.createAnimal(() => 0.5)
     animal.setAnimal(d, name)
     animal.frame(d, 0, 80)
@@ -738,7 +755,7 @@ test('the dream bubble’s puffs stand apart from its ring', () => {
 
 // The bubble may rest on the outline of the animal's back
 test('the dream bubble and its dream leave every animal’s fur uncovered', () => {
-  for (const name of ['camel', 'cat', 'dog']) {
+  for (const name of ['camel', 'cat', 'dog', 'rocky']) {
     for (const item of ['food', 'prey']) {
       const d = animal.createAnimal(() => 0.5)
       animal.setAnimal(d, name)

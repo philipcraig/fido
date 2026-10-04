@@ -32,8 +32,9 @@ case "$cmd" in
     fi
     mkdir -p "$DIR/work"
     # Unset the variables that would make the inner Claude Code think it runs
-    # inside this one
-    env_args=(-u CLAUDECODE -u CLAUDE_CODE_ENTRYPOINT)
+    # inside this one. Inside tmux, Claude Code also drops to 256 colors, which
+    # changes the animals' colors in a snap, so it isn't told it's in tmux.
+    env_args=(-u CLAUDECODE -u CLAUDE_CODE_ENTRYPOINT -u TMUX -u TMUX_PANE)
     if [[ -n "${CLAUDE_CODE_REMOTE:-}" ]]; then
       mkdir -p "$DIR/config"
       if [[ ! -f "$DIR/config/.claude.json" ]]; then
@@ -41,7 +42,7 @@ case "$cmd" in
           "$DIR/work" >"$DIR/config/.claude.json"
       fi
       env_args+=(-u CLAUDE_CODE_SESSION_ID -u CLAUDE_CODE_REMOTE_SESSION_ID -u CLAUDE_CODE_MESSAGING_SOCKET)
-      env_args+=(-u CLAUDE_CODE_TEE_SDK_STDOUT -u CLAUDE_CODE_DIAGNOSTICS_FILE)
+      env_args+=(-u CLAUDE_CODE_TEE_SDK_STDOUT -u CLAUDE_CODE_DIAGNOSTICS_FILE -u CLAUDE_CODE_CHILD_SESSION)
       env_args+=("CLAUDE_CONFIG_DIR=$DIR/config")
     fi
     printf -v claude_cmd '%q ' env "${env_args[@]}" TERM=xterm-256color COLORTERM=truecolor \

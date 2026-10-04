@@ -1,8 +1,8 @@
 # pet
 
 `snoozing-pet`, a Claude Code mod that puts a pixel-art animal in the band
-above the prompt: a dog by default, or a camel, or a solid gray cat. The animal
-snoozes while Claude is idle, and wakes up to react while Claude works. Tested
+above the prompt: a dog by default, or a camel, a solid gray cat, or Rocky the
+Eridian from Project Hail Mary. The animal snoozes while Claude is idle, and wakes up to react while Claude works. Tested
 with Claude Code v2.1.289 in a terminal. The Desktop app gets no animal.
 
 ![Claude Code fixes a failing test while the dog sniffs, chases a ball, jumps at the failure, and goes back to sleep](media/demo.gif)
@@ -32,7 +32,9 @@ While Claude is idle, the animal sleeps and breathes, with z's drifting up. Ever
 paddles its paws in a dream, yawns, sits up to scratch, makes a sleepy noise,
 rolls onto its back, turns round and lies down again, opens one eye, or
 dreams. The camel dreams of a cactus or water, the cat of a fish or a mouse,
-and the dog of a bone or a squirrel. Typing in the prompt makes its ear twitch.
+the dog of a bone or a squirrel, and Rocky of astrophage or his home star.
+Typing in the prompt makes its ear twitch. Rocky has no ears or face: he raises
+a three-fingered hand when he's alert, and talks in musical chords.
 
 While Claude works, the animal reacts to what Claude is doing:
 
@@ -56,8 +58,8 @@ While Claude works, the animal reacts to what Claude is doing:
 - `/pet on`, `/pet off`: shows or hides the animal.
 - `/pet pet`: the animal rolls over for a belly rub.
 - `/pet feed`: the animal eats its favorite food: a fish for the cat, a bone
-  for the dog, a cactus for the camel.
-- `/pet camel`, `/pet cat`, `/pet dog`: switches the animal. The choice
+  for the dog, a cactus for the camel, astrophage for Rocky.
+- `/pet camel`, `/pet cat`, `/pet dog`, `/pet rocky`: switches the animal. The choice
   persists between sessions.
 
 ## Contributing
