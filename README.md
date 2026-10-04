@@ -62,5 +62,4 @@ While Claude works, the animal reacts to what Claude is doing:
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) to run the mod from a clone, test it, and
-learn how the files fit together.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for development instructions
