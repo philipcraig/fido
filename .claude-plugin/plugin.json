@@ -1,6 +1,8 @@
 {
   "name": "snoozing-pet",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "A pixel-art animal above the prompt that snoozes while Claude is idle and reacts to Claude's work",
-  "author": { "name": "Philip Craig" }
+  "author": { "name": "Philip Craig" },
+  "repository": "https://github.com/philipcraig/pet",
+  "license": "MIT"
 }
