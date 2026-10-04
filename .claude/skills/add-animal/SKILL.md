@@ -43,7 +43,8 @@ Run every command from the repository root, written out in full as this skill
 shows it: no `cd`, no shell variables, and no loops. Chaining with `&&` is
 fine. This skill pre-approves the commands it needs, so the person isn't asked
 about each one, but a command with a `cd`, a variable or a loop can't be
-matched and needs their approval.
+matched and needs their approval. For the same reason, change files with the
+Edit and Write tools, never with a script such as `sed` or `python3`.
 
 Keep every image you render in `.preview/` at the repository root. Git ignores
 that folder, and you can read the images there with the Read tool to see the
