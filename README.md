@@ -68,3 +68,7 @@ While Claude works, the animal reacts to what Claude is doing:
 - `tests/`: run with `claude plugin test` from this directory.
 - `dev/preview.mjs`: renders a scripted session to a PNG contact sheet, as in
   `node dev/preview.mjs sheet.png cat`.
+- `.github/workflows/ci.yml`: on each push to `main` and each pull request,
+  checks formatting with Prettier, validates the manifests, and runs the
+  tests. To check formatting locally, run `npx prettier@3.8.1 --check .`, or
+  `--write` to fix it.
