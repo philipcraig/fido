@@ -5,7 +5,7 @@ import { framesFor } from '../dev/frames.mjs'
 
 // What Claude Code passes to a ui.render hook for the band above the prompt
 const BAND = {
-  plugin: 'snoozing-dog',
+  plugin: 'snoozing-pet',
   component: 'AbovePrompt',
   requestId: 'above-prompt',
   viewport: { columns: 120, rows: 40, isFullscreen: true },
