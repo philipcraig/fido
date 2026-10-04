@@ -135,8 +135,15 @@ The sheet has 21 labeled moments, from sleeping to eating. Check each one:
 - The food is recognizable whole, half eaten and gone.
 - The babies look like small versions of it.
 
-Fix what's wrong and render again, up to five rounds. Make the art good, not
-just valid: this is the whole point of the change.
+Then compare it with the sheets of the existing animals, and ask: would someone
+who sees only this sheet name the animal? The poses share one body, so the
+silhouette that sets the animal apart comes from its head sprite, its ears and
+its flags. Reshape the head freely, and add a flag where the body needs a
+feature of its own.
+
+Fix what's wrong and render again. Keep going for up to five rounds while you
+can still name a flaw; don't stop at art you'd call rough. Make the art good,
+not just valid: that is the whole point of the change.
 
 ## 7. Check the other animals are unchanged
 
@@ -196,7 +203,8 @@ dev/live.sh snap .preview/live-<name>-pet.png 14
 dev/live.sh stop
 ```
 
-Wait a second after each `send` before you `snap`. Read the images. If
+Wait a second after each `send` before you `snap`. Read every image you
+capture, and fix anything wrong that the contact sheet didn't show. If
 `dev/live.sh` fails because tmux or Playwright is missing, skip this step and
 say so.
 
