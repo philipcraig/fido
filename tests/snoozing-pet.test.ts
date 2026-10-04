@@ -5,7 +5,7 @@ import { framesFor } from '../dev/frames.mjs'
 
 // What Claude Code passes to a ui.render hook for the band above the prompt
 const BAND = {
-  plugin: 'snoozing-dog',
+  plugin: 'snoozing-pet',
   component: 'AbovePrompt',
   requestId: 'above-prompt',
   viewport: { columns: 120, rows: 40, isFullscreen: true },
@@ -96,16 +96,16 @@ test('draws a sleeping animal with z’s in the band', async ($, on) => {
   expect(await ui.find({ type: 'Text', text: 'drawn by Claude Code' })).toBeDefined()
 })
 
-test('/fido off hides the animal and saves the choice, and /fido brings it back', async ($, on) => {
+test('/pet off hides the animal and saves the choice, and /pet brings it back', async ($, on) => {
   const { saved } = stubSession(on)
   await start($)
-  await $.command.run({ command: 'fido', args: 'off' })
+  await $.command.run({ command: 'pet', args: 'off' })
   expect(saved.get('enabled')).toBe(false)
   let ui = await $.ui.mount({ ...BAND, surface: 'terminal' })
   expect(await ui.find({ type: 'Raster' })).toBeUndefined()
   await ui.unmount()
 
-  await $.command.run({ command: 'fido', args: '' })
+  await $.command.run({ command: 'pet', args: '' })
   expect(saved.get('enabled')).toBe(true)
   ui = await $.ui.mount({ ...BAND, surface: 'terminal' })
   expect(await ui.find({ type: 'Raster' })).toBeDefined()
@@ -299,23 +299,23 @@ test('youngsters stay on the band while the animal runs back and forth', () => {
   }
 })
 
-test('/fido cat swaps the animal and saves the choice', async ($, on) => {
+test('/pet cat swaps the animal and saves the choice', async ($, on) => {
   const { saved } = stubSession(on)
   await start($)
   const before = await $.ui.mount({ ...BAND, surface: 'terminal' })
   const dogCells = (await before.find({ type: 'Raster' })).props.cells
   await before.unmount()
-  await $.command.run({ command: 'fido', args: 'Cat' })
+  await $.command.run({ command: 'pet', args: 'Cat' })
   expect(saved.get('animal')).toBe('cat')
   const after = await $.ui.mount({ ...BAND, surface: 'terminal' })
   expect((await after.find({ type: 'Raster' })).props.cells).not.toBe(dogCells)
 })
 
-test('/fido with an unknown option, or an object key, changes nothing', async ($, on) => {
+test('/pet with an unknown option, or an object key, changes nothing', async ($, on) => {
   const { saved } = stubSession(on)
   await start($)
   for (const args of ['kitten', 'constructor', '__proto__', 'toString']) {
-    await $.command.run({ command: 'fido', args })
+    await $.command.run({ command: 'pet', args })
   }
   expect(saved.has('enabled')).toBe(false)
   expect(saved.has('animal')).toBe(false)
@@ -326,7 +326,7 @@ test('/fido with an unknown option, or an object key, changes nothing', async ($
 test('a saved animal that is an object key falls back to the dog', async ($, on) => {
   const { saved } = stubSession(on)
   await start($)
-  await $.command.run({ command: 'fido', args: 'cat' })
+  await $.command.run({ command: 'pet', args: 'cat' })
   // A reload with a bad saved animal brings back the dog, not the last animal
   saved.set('animal', 'constructor')
   await start($)
@@ -336,7 +336,7 @@ test('a saved animal that is an object key falls back to the dog', async ($, on)
   expect(colors.has(ANIMALS.cat.colors.b)).toBe(false)
 })
 
-test('/fido feed sets the animal eating', async ($, on) => {
+test('/pet feed sets the animal eating', async ($, on) => {
   const { clock } = stubSession(on)
   await start($)
   await clock.advance(250)
@@ -344,17 +344,17 @@ test('/fido feed sets the animal eating', async ($, on) => {
   const before = await $.ui.mount({ ...BAND, surface: 'terminal' })
   const asleep = (await before.find({ type: 'Raster' })).props.cells
   await before.unmount()
-  await $.command.run({ command: 'fido', args: 'feed' })
+  await $.command.run({ command: 'pet', args: 'feed' })
   const after = await $.ui.mount({ ...BAND, surface: 'terminal' })
   expect((await after.find({ type: 'Raster' })).props.cells).not.toBe(asleep)
 })
 
-test('/fido feed between redraws draws the whole bone', async ($, on) => {
+test('/pet feed between redraws draws the whole bone', async ($, on) => {
   const { clock } = stubSession(on)
   await start($)
   // Partway to the next redraw tick
   await clock.advance(300)
-  await $.command.run({ command: 'fido', args: 'feed' })
+  await $.command.run({ command: 'pet', args: 'feed' })
   const ui = await $.ui.mount({ ...BAND, surface: 'terminal' })
   const cells = cellsOf(await ui.find({ type: 'Raster' }))
   const BONE = 0xf0ead8
@@ -365,12 +365,12 @@ test('/fido feed between redraws draws the whole bone', async ($, on) => {
   expect(columns.size).toBe(7)
 })
 
-test('/fido feed in the Desktop app says where the animal shows', async ($, on) => {
+test('/pet feed in the Desktop app says where the animal shows', async ($, on) => {
   const { toasts } = stubSession(on)
   await start($)
   const ui = await $.ui.mount({ ...BAND, surface: 'desktop' })
   await ui.unmount()
-  await $.command.run({ command: 'fido', args: 'feed' })
+  await $.command.run({ command: 'pet', args: 'feed' })
   expect(toasts.join()).toContain('terminal')
 })
 
@@ -765,10 +765,10 @@ test('a reload does not double the redraws', async ($, on) => {
 test('a turn that starts while the animal is hidden starts at the time it comes', async ($, on) => {
   const { clock } = stubSession(on)
   await start($)
-  await $.command.run({ command: 'fido', args: 'off' })
+  await $.command.run({ command: 'pet', args: 'off' })
   await clock.advance(60_000)
   await $.turn.start({ turnId: 't1' })
-  await $.command.run({ command: 'fido', args: 'on' })
+  await $.command.run({ command: 'pet', args: 'on' })
   // The highest row the animal reaches, with -1 for an empty pixel
   const top = async () => {
     const ui = await $.ui.mount({ ...BAND, surface: 'terminal' })
@@ -824,18 +824,18 @@ test('an event between ticks shows at the next redraw', async ($, on) => {
   }
   const first = await cells()
   expect(await cells()).toBe(first)
-  await $.command.run({ command: 'fido', args: 'pet' })
+  await $.command.run({ command: 'pet', args: 'pet' })
   expect(await cells()).not.toBe(first)
 })
 
-test('/fido pet right after /fido on does not say the band is too small', async ($, on) => {
+test('/pet pet right after /pet on does not say the band is too small', async ($, on) => {
   const { toasts } = stubSession(on)
   await start($)
-  await $.command.run({ command: 'fido', args: 'off' })
+  await $.command.run({ command: 'pet', args: 'off' })
   const ui = await $.ui.mount({ ...BAND, surface: 'terminal' })
   await ui.unmount()
-  await $.command.run({ command: 'fido', args: 'on' })
-  await $.command.run({ command: 'fido', args: 'pet' })
+  await $.command.run({ command: 'pet', args: 'on' })
+  await $.command.run({ command: 'pet', args: 'pet' })
   expect(toasts.join()).not.toContain('rows free')
 })
 

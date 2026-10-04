@@ -1,10 +1,10 @@
 {
-  "name": "fido",
+  "name": "pet",
   "owner": { "name": "Philip Craig" },
-  "description": "The snoozing-dog Claude Code mod",
+  "description": "The snoozing-pet Claude Code mod",
   "plugins": [
     {
-      "name": "snoozing-dog",
+      "name": "snoozing-pet",
       "source": "./",
       "description": "A pixel-art animal above the prompt that snoozes while Claude is idle and reacts to Claude's work"
     }
