@@ -10,11 +10,11 @@ with Claude Code v2.1.281 in a terminal. The Desktop app gets no animal.
 ## Run it
 
 This repository is also a plugin marketplace. To install the mod for every
-session:
+session, run this in Claude Code v2.1.275 or later, then confirm adding the
+marketplace and choose a scope:
 
-```bash
-claude plugin marketplace add philipcraig/pet
-claude plugin install snoozing-pet@pet
+```text
+/plugin install snoozing-pet --marketplace philipcraig/pet
 ```
 
 To try it for one session, clone this repository, then load the clone's
