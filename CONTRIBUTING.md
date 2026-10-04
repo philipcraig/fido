@@ -77,5 +77,8 @@ It checks formatting with Prettier, validates the manifests with
 - `dev/live.sh`: runs Claude Code with the plugin in tmux, to drive and capture.
 - `dev/snap.mjs`: renders a captured terminal screen to a PNG.
 - `.github/workflows/ci.yml`: the CI workflow.
+- `.claude-plugin/icon.png`: the plugin directory listing's icon, a capture of
+  Claude Code running tests while the dog chases its ball. The directory reads
+  it only when the plugin is first saved or submitted in its developer portal.
 - `.claude/skills/add-animal/SKILL.md`: the `/add-animal` skill, which adds a
   new animal from an idea to a pull request.
