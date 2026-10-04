@@ -17,6 +17,14 @@ marketplace and choose a scope:
 /plugin install snoozing-pet --marketplace philipcraig/pet
 ```
 
+To try it for one session, clone this repository, then load the clone's
+directory:
+
+```bash
+git clone https://github.com/philipcraig/pet
+claude --plugin-dir ./pet
+```
+
 ## What the animal does
 
 While Claude is idle, the animal sleeps and breathes, with z's drifting up. Every
