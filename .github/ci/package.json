@@ -1,0 +1,8 @@
+{
+  "private": true,
+  "description": "Tools the CI workflow runs, pinned by package-lock.json",
+  "devDependencies": {
+    "@anthropic-ai/claude-code": "2.1.289",
+    "prettier": "3.8.1"
+  }
+}

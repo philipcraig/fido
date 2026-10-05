@@ -66,6 +66,15 @@ npx prettier@3.8.1 --write .
 It checks formatting with Prettier, validates the manifests with
 `claude plugin validate .`, and runs the tests.
 
+The versions of Claude Code and Prettier it runs are pinned in
+`.github/ci/package-lock.json`, and the actions it uses are pinned to commits.
+The lockfile stays out of the repository root, where the Claude plugin
+directory would take it for dependencies to install for each user. To change a
+version, run `npm install --prefix .github/ci --save-exact <package>@<version>`,
+and keep the Prettier version in this file's commands the same. The workflow passes
+[zizmor](https://docs.zizmor.sh/), the GitHub Actions security linter, with no
+findings.
+
 ## Files
 
 - `hooks/register.js`: the hooks module. It handles events and draws the band.

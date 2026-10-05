@@ -8,24 +8,38 @@ on:
 permissions:
   contents: read
 
+# A newer push to the same branch or pull request cancels the run before it
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+# Actions are pinned to the commit of the release named beside each. The tools
+# come from .github/ci/package-lock.json.
 jobs:
   format:
+    name: Format
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-node@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
         with:
           node-version: 22
-      - run: npx --yes prettier@3.8.1 --check .
+      - run: npm ci --prefix .github/ci
+      - run: .github/ci/node_modules/.bin/prettier --check .
 
   test:
+    name: Validate and test
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-node@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
         with:
           node-version: 22
       # The tests import 'claude-code/testing', which ships in the Claude Code CLI
-      - run: npm install --global @anthropic-ai/claude-code@2.1.289
-      - run: claude plugin validate .
-      - run: claude plugin test
+      - run: npm ci --prefix .github/ci
+      - run: .github/ci/node_modules/.bin/claude plugin validate .
+      - run: .github/ci/node_modules/.bin/claude plugin test
