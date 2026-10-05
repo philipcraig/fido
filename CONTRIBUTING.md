@@ -75,7 +75,8 @@ npx -p typescript@5.9.3 tsc -p .
 
 `.github/workflows/ci.yml` runs on each push to `main` and each pull request.
 It checks formatting with Prettier, validates the manifests with
-`claude plugin validate .`, runs the tests, and type-checks them with `tsc`.
+`claude plugin validate .`, runs the tests, type-checks them with `tsc`, and
+audits the workflows.
 
 The versions of Claude Code, Prettier and TypeScript it runs are pinned in
 `.github/ci/package-lock.json`, and the actions it uses are pinned to commits.
@@ -85,8 +86,15 @@ version, run `npm install --prefix .github/ci --save-exact <package>@<version>`,
 and keep the Prettier and TypeScript versions in this file's commands the same.
 Dependabot, set up in `.github/dependabot.yml`, proposes updates to both each
 week, once a release is a week old.
-The workflow passes [zizmor](https://docs.zizmor.sh/), the GitHub Actions
-security linter, with no findings.
+
+Its Workflow security job audits the workflows with
+[zizmor](https://docs.zizmor.sh/), the GitHub Actions security linter, at its
+strictest (pedantic) persona and with its online audits, and fails on any
+finding. To run it locally, with zizmor installed:
+
+```bash
+zizmor --persona=pedantic .github/
+```
 
 ## Files
 
