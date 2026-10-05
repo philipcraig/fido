@@ -13,9 +13,8 @@ allowed-tools:
   - Bash(node dev/preview.mjs *)
   - Bash(dev/live.sh *)
   - Bash(claude plugin test *)
-  - Bash(npx --yes -p typescript@5.9.3 tsc *)
+  - Bash(node dev/tool.mjs *)
   - Bash(claude plugin validate *)
-  - Bash(npx --yes prettier@3.8.1 *)
   - Bash(mkdir -p .preview)
   - Bash(cmp *)
   - Bash(git status *)
@@ -176,11 +175,11 @@ In `tests/snoozing-pet.test.ts`:
 Then run the checks, and fix whatever fails:
 
 ```bash
-npx --yes prettier@3.8.1 --write .
-npx --yes prettier@3.8.1 --check .
+node dev/tool.mjs prettier --write .
+node dev/tool.mjs prettier --check .
 claude plugin validate .
 claude plugin test
-npx --yes -p typescript@5.9.3 tsc -p .
+node dev/tool.mjs tsc -p .
 ```
 
 `tsc` needs the plugin API's types in `.claude-plugin/types/`, which Claude
