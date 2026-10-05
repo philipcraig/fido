@@ -59,6 +59,49 @@ export function activityOf(tool) {
   return 'think'
 }
 
+/**
+ * A one-off reaction or a nap: its kind, such as `oops` or `dream`, and when
+ * it starts and ends, in milliseconds
+ * @typedef {{ kind: string, at: number, until: number }} Spell
+ */
+
+/**
+ * A walk: from x `from` at time `at`, at `speed` pixels a second, to x `to`
+ * at time `until`, then facing left if `flip`
+ * @typedef {{ from: number, to: number, speed: number, at: number, until: number, flip: boolean }} Move
+ */
+
+/**
+ * Everything the animal knows: what it is, what Claude is doing, and what it
+ * is doing about it
+ * @typedef {object} Animal
+ * @property {() => number} random
+ * @property {string} animal
+ * @property {boolean} working
+ * @property {number} workStartedAt
+ * @property {{ id: string, activity: string }[]} tools
+ * @property {Spell | null} reaction
+ * @property {Spell | null} nap
+ * @property {number | null} nextNapAt
+ * @property {number} lastTwitchAt
+ * @property {Move | null} move
+ * @property {number | null} home
+ * @property {number | null} roamTarget
+ * @property {string} item `food` or `prey`, what a dream is of
+ */
+
+/** @import { Effect, Frame } from './scene.js' */
+
+/**
+ * A frame as frame() returns it, with where the animal is and which way it
+ * faces worked out
+ * @typedef {Frame & { animal: string, flip: boolean, effects: Effect[] }} AnimalFrame
+ */
+
+/**
+ * @param {() => number} [random]
+ * @returns {Animal}
+ */
 export function createAnimal(random = Math.random) {
   return {
     random,
@@ -242,6 +285,12 @@ function currentActivity(d) {
 
 // The frame to draw at time now, in a band columns wide. Moves the animal along
 // as time passes, so call it once for each redraw.
+/**
+ * @param {Animal} d
+ * @param {number} now
+ * @param {number} columns
+ * @returns {AnimalFrame}
+ */
 export function frame(d, now, columns) {
   const right = columns - (ANIMAL_W - CENTER)
   const left = Math.max(CENTER, columns - YARD)

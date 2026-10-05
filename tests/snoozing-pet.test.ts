@@ -1,5 +1,7 @@
-import { expect, mock, test } from 'claude-code/testing'
+import type { On, RenderElement } from 'claude-code'
+import { expect, mock, test, type Engine, type FoundElement } from 'claude-code/testing'
 import * as animal from '../hooks/animal.js'
+import type { Animal } from '../hooks/animal.js'
 import { ANIMALS, COLORS, DEFAULT_COLOR, SCENE_ROWS, drawScene, foodSpan } from '../hooks/scene.js'
 import { framesFor } from '../dev/frames.mjs'
 
@@ -19,10 +21,10 @@ const BAND = {
   },
 } as const
 
-const DRAWN_BY_CLAUDE_CODE = { type: 'Text', props: {}, children: ['drawn by Claude Code'] }
+const DRAWN_BY_CLAUDE_CODE: RenderElement = { type: 'Text', props: {}, children: ['drawn by Claude Code'] }
 
 // Stubs everything the mod asks Claude Code for. Call before the first $ call.
-function stubSession(on) {
+function stubSession(on: On) {
   const clock = mock.clock(on)
   const saved = new Map<string, unknown>()
   on('store.get', ($, e) => ({ value: saved.get(e.key) }))
@@ -30,7 +32,7 @@ function stubSession(on) {
     saved.set(e.key, e.value)
     return { value: undefined }
   })
-  on('command.register', () => ({ value: undefined }))
+  on('command.register', ($, e) => ({ value: { command: e.name } }))
   const toasts: string[] = []
   on('ui.toast', ($, e) => {
     toasts.push(JSON.stringify(e))
@@ -43,24 +45,40 @@ function stubSession(on) {
   return { clock, saved, toasts }
 }
 
-function start($) {
+function start($: Engine) {
   return $.session.start({ surface: 'terminal', isInteractive: true, cwd: '/work' })
 }
 
+// Runs /pet as the person typing it in the composer would
+function pet($: Engine, args: string) {
+  return $.command.run({
+    command: 'pet',
+    args,
+    origin: { kind: 'composer' },
+    presentation: { isFullscreen: true, columns: 120 },
+  })
+}
+
+// The value, failing the test when there is none
+function defined<T>(value: T | undefined): T {
+  if (value === undefined) throw new Error('Expected a value, got undefined')
+  return value
+}
+
 // A Raster's cells as code point, foreground, background triples
-function cellsOf(raster): Uint32Array {
-  const bin = atob(raster.props.cells)
+function cellsOf(raster: FoundElement | undefined): Uint32Array {
+  const bin = atob(String(raster?.props.cells))
   const bytes = new Uint8Array(bin.length)
   for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i)
   return new Uint32Array(bytes.buffer)
 }
 
 // The characters drawn in a Raster that aren't half blocks or blanks
-function glyphs(raster): string {
+function glyphs(raster: FoundElement | undefined): string {
   const cells = cellsOf(raster)
   let out = ''
   for (let i = 0; i < cells.length; i += 3) {
-    const ch = cells[i]
+    const ch = cells[i]!
     if (ch !== 32 && ch !== 0x2580 && ch !== 0x2584) out += String.fromCodePoint(ch)
   }
   return out
@@ -71,14 +89,12 @@ function glyphs(raster): string {
 function pixelsOf(cells: Uint32Array, columns: number): number[][] {
   const rows: number[][] = []
   for (let i = 0; i < cells.length; i += 3) {
-    const [ch, fg, bg] = [cells[i], cells[i + 1], cells[i + 2]]
+    const [ch, fg, bg] = [cells[i]!, cells[i + 1]!, cells[i + 2]!]
     const row = Math.floor(i / 3 / columns) * 2
-    rows[row] ??= []
-    rows[row + 1] ??= []
     const color = (c: number) => (c === DEFAULT_COLOR ? -1 : c)
     const [top, bottom] = ch === 0x2580 ? [color(fg), color(bg)] : ch === 0x2584 ? [color(bg), color(fg)] : [-1, -1]
-    rows[row].push(top)
-    rows[row + 1].push(bottom)
+    ;(rows[row] ??= []).push(top)
+    ;(rows[row + 1] ??= []).push(bottom)
   }
   return rows
 }
@@ -87,7 +103,7 @@ test('draws a sleeping animal with z’s in the band', async ($, on) => {
   stubSession(on)
   await start($)
   const ui = await $.ui.mount({ ...BAND, surface: 'terminal' })
-  const raster = await ui.find({ type: 'Raster' })
+  const raster = defined(await ui.find({ type: 'Raster' }))
   expect(raster).toBeDefined()
   expect(raster.props.columns).toBe(120)
   expect(raster.props.rows).toBe(SCENE_ROWS)
@@ -99,13 +115,13 @@ test('draws a sleeping animal with z’s in the band', async ($, on) => {
 test('/pet off hides the animal and saves the choice, and /pet brings it back', async ($, on) => {
   const { saved } = stubSession(on)
   await start($)
-  await $.command.run({ command: 'pet', args: 'off' })
+  await pet($, 'off')
   expect(saved.get('enabled')).toBe(false)
   let ui = await $.ui.mount({ ...BAND, surface: 'terminal' })
   expect(await ui.find({ type: 'Raster' })).toBeUndefined()
   await ui.unmount()
 
-  await $.command.run({ command: 'pet', args: '' })
+  await pet($, '')
   expect(saved.get('enabled')).toBe(true)
   ui = await $.ui.mount({ ...BAND, surface: 'terminal' })
   expect(await ui.find({ type: 'Raster' })).toBeDefined()
@@ -115,7 +131,7 @@ test('a failed command makes the animal jump with a !', async ($, on) => {
   stubSession(on)
   on('tool.call', () => ({ result: 'exit 1', isError: true }))
   await start($)
-  await $.turn.start({ turnId: 't1' })
+  await $.turn.start({ turnId: 't1', text: 'Fix the failing test' })
   await $.tool.call({ tool: 'Bash', command: 'false' })
   const ui = await $.ui.mount({ ...BAND, surface: 'terminal' })
   expect(glyphs(await ui.find({ type: 'Raster' }))).toContain('!')
@@ -126,7 +142,7 @@ test('a call the user rejects makes the animal droop, not jump', async ($, on) =
   const text = "The user doesn't want to proceed with this tool use. The tool use was rejected."
   on('tool.call', () => ({ result: `Error: ${text}`, text, isError: true }))
   await start($)
-  await $.turn.start({ turnId: 't1' })
+  await $.turn.start({ turnId: 't1', text: 'Fix the failing test' })
   await $.tool.call({ tool: 'Bash', command: 'rm -rf build' })
   const ui = await $.ui.mount({ ...BAND, surface: 'terminal' })
   expect(glyphs(await ui.find({ type: 'Raster' }))).not.toContain('!')
@@ -136,9 +152,9 @@ test('a short band keeps the bottom rows of the scene', async ($, on) => {
   stubSession(on)
   await start($)
   const ui = await $.ui.mount({ ...BAND, surface: 'terminal', props: { ...BAND.props, maxRows: 5 } })
-  const raster = await ui.find({ type: 'Raster' })
+  const raster = defined(await ui.find({ type: 'Raster' }))
   expect(raster.props.rows).toBe(5)
-  expect(atob(raster.props.cells).length).toBe(120 * 5 * 3 * 4)
+  expect(atob(String(raster.props.cells)).length).toBe(120 * 5 * 3 * 4)
 })
 
 test('the Desktop app gets the band Claude Code draws', async ($, on) => {
@@ -225,7 +241,7 @@ test('a cat never shows its tongue, even after a long turn', () => {
 })
 
 // Moves the clock in redraw-sized steps and returns the biggest jump in x
-function biggestStep(d, from: number, to: number) {
+function biggestStep(d: Animal, from: number, to: number) {
   let last = animal.frame(d, from, 120).x
   let biggest = 0
   for (let now = from + 125; now <= to; now += 125) {
@@ -237,7 +253,7 @@ function biggestStep(d, from: number, to: number) {
 }
 
 // Runs a Bash turn long enough that the animal ends up away from home
-function chaseBall(d) {
+function chaseBall(d: Animal) {
   animal.frame(d, 0, 120)
   animal.noteTurnStart(d, 0)
   animal.noteToolStart(d, 'b', 'Bash')
@@ -303,19 +319,19 @@ test('/pet cat swaps the animal and saves the choice', async ($, on) => {
   const { saved } = stubSession(on)
   await start($)
   const before = await $.ui.mount({ ...BAND, surface: 'terminal' })
-  const dogCells = (await before.find({ type: 'Raster' })).props.cells
+  const dogCells = defined(await before.find({ type: 'Raster' })).props.cells
   await before.unmount()
-  await $.command.run({ command: 'pet', args: 'Cat' })
+  await pet($, 'Cat')
   expect(saved.get('animal')).toBe('cat')
   const after = await $.ui.mount({ ...BAND, surface: 'terminal' })
-  expect((await after.find({ type: 'Raster' })).props.cells).not.toBe(dogCells)
+  expect(defined(await after.find({ type: 'Raster' })).props.cells).not.toBe(dogCells)
 })
 
 test('/pet with an unknown option, or an object key, changes nothing', async ($, on) => {
   const { saved } = stubSession(on)
   await start($)
   for (const args of ['kitten', 'constructor', '__proto__', 'toString']) {
-    await $.command.run({ command: 'pet', args })
+    await pet($, args)
   }
   expect(saved.has('enabled')).toBe(false)
   expect(saved.has('animal')).toBe(false)
@@ -326,7 +342,7 @@ test('/pet with an unknown option, or an object key, changes nothing', async ($,
 test('a saved animal that is an object key falls back to the dog', async ($, on) => {
   const { saved } = stubSession(on)
   await start($)
-  await $.command.run({ command: 'pet', args: 'cat' })
+  await pet($, 'cat')
   // A reload with a bad saved animal brings back the dog, not the last animal
   saved.set('animal', 'constructor')
   await start($)
@@ -342,11 +358,11 @@ test('/pet feed sets the animal eating', async ($, on) => {
   await clock.advance(250)
   // Both frames are drawn at the same time, so only feeding can change them
   const before = await $.ui.mount({ ...BAND, surface: 'terminal' })
-  const asleep = (await before.find({ type: 'Raster' })).props.cells
+  const asleep = defined(await before.find({ type: 'Raster' })).props.cells
   await before.unmount()
-  await $.command.run({ command: 'pet', args: 'feed' })
+  await pet($, 'feed')
   const after = await $.ui.mount({ ...BAND, surface: 'terminal' })
-  expect((await after.find({ type: 'Raster' })).props.cells).not.toBe(asleep)
+  expect(defined(await after.find({ type: 'Raster' })).props.cells).not.toBe(asleep)
 })
 
 test('/pet feed between redraws draws the whole bone', async ($, on) => {
@@ -354,7 +370,7 @@ test('/pet feed between redraws draws the whole bone', async ($, on) => {
   await start($)
   // Partway to the next redraw tick
   await clock.advance(300)
-  await $.command.run({ command: 'pet', args: 'feed' })
+  await pet($, 'feed')
   const ui = await $.ui.mount({ ...BAND, surface: 'terminal' })
   const cells = cellsOf(await ui.find({ type: 'Raster' }))
   const BONE = 0xf0ead8
@@ -370,7 +386,7 @@ test('/pet feed in the Desktop app says where the animal shows', async ($, on) =
   await start($)
   const ui = await $.ui.mount({ ...BAND, surface: 'desktop' })
   await ui.unmount()
-  await $.command.run({ command: 'pet', args: 'feed' })
+  await pet($, 'feed')
   expect(toasts.join()).toContain('terminal')
 })
 
@@ -378,14 +394,14 @@ test('a frame drawn just before the animal is fed shows the whole food', () => {
   const d = animal.createAnimal(() => 0.5)
   animal.frame(d, 1000, 64)
   animal.noteTreat(d, 1130, 'feed')
-  expect(animal.frame(d, 1125, 64).effects.find((fx) => fx.kind === 'food').left).toBe(1)
+  expect(defined(animal.frame(d, 1125, 64).effects.find((fx) => fx.kind === 'food')).left).toBe(1)
 })
 
 test('a fed animal eats all its food, licks its lips, and goes back to sleep', () => {
   const d = animal.createAnimal(() => 0.5)
   animal.setAnimal(d, 'cat')
   animal.noteTreat(d, 0, 'feed')
-  const food = (now: number) => animal.frame(d, now, 64).effects.find((fx) => fx.kind === 'food')
+  const food = (now: number) => defined(animal.frame(d, now, 64).effects.find((fx) => fx.kind === 'food'))
   expect(food(100).left).toBe(1)
   expect(food(1500).left).toBeLessThan(1)
   const licking = animal.frame(d, 3000, 64)
@@ -426,7 +442,7 @@ test('feeding a napping animal puts off its next nap', () => {
 })
 
 // Puts the animal at x, standing still and facing right
-function standAt(d, x: number) {
+function standAt(d: Animal, x: number) {
   d.move = { from: x, to: x, speed: 1, at: 0, until: 0, flip: false }
 }
 
@@ -437,7 +453,7 @@ test('the food stays on the band when the animal is fed at the right edge', () =
   animal.noteToolStart(d, 'b', 'Bash')
   standAt(d, 64)
   animal.noteTreat(d, 125, 'feed')
-  const food = animal.frame(d, 250, 64).effects.find((fx) => fx.kind === 'food')
+  const food = defined(animal.frame(d, 250, 64).effects.find((fx) => fx.kind === 'food'))
   const [first, last] = foodSpan(ANIMALS.dog, food.x, food.flip)
   expect(first).toBeGreaterThanOrEqual(0)
   expect(last).toBeLessThan(64)
@@ -451,7 +467,7 @@ test('a camel near the right edge eats facing right when its cactus fits', () =>
   animal.noteToolStart(d, 'b', 'Bash')
   standAt(d, 44)
   animal.noteTreat(d, 125, 'feed')
-  const food = animal.frame(d, 250, 64).effects.find((fx) => fx.kind === 'food')
+  const food = defined(animal.frame(d, 250, 64).effects.find((fx) => fx.kind === 'food'))
   expect(food.flip).toBe(false)
   expect(foodSpan(ANIMALS.camel, food.x, false)[1]).toBeLessThan(64)
 })
@@ -477,8 +493,8 @@ test('an animal fed while it roams keeps facing the way it was going', () => {
   animal.noteTurnStart(d, 0)
   animal.noteToolStart(d, 'b', 'Bash')
   // It wakes, then runs left after the ball
-  let running
-  for (let now = 125; now <= 1000; now += 125) running = animal.frame(d, now, 120)
+  let running = animal.frame(d, 125, 120)
+  for (let now = 250; now <= 1000; now += 125) running = animal.frame(d, now, 120)
   expect(running.pose).toBe('stand')
   expect(running.flip).toBe(true)
   animal.noteTreat(d, 1000, 'feed')
@@ -536,7 +552,7 @@ test('a frame without an animal draws the dog', () => {
 })
 
 test('the z’s float clear of every sleeping animal’s head and ears', () => {
-  for (const [name, nap] of ['camel', 'cat', 'dog', 'rocky'].flatMap((name) => [
+  for (const [name, nap] of ['camel', 'cat', 'dog', 'rocky'].flatMap((name): [string, string | null][] => [
     [name, null],
     [name, 'roll'],
   ])) {
@@ -600,7 +616,7 @@ test('no nap starts while the animal walks home', () => {
 
 // Runs a Bash turn that the user interrupts, and lets the droop finish, so
 // the animal is walking home
-function walkHomeAfterAbort(d) {
+function walkHomeAfterAbort(d: Animal) {
   chaseBall(d)
   animal.noteTurnEnd(d, 3000, true)
   for (let now = 3125; now <= 4625; now += 125) animal.frame(d, now, 120)
@@ -730,14 +746,15 @@ test('the dream bubble’s puffs stand apart from its ring', () => {
     d.nap = { kind: 'bubble', at: 0, until: 5200 }
     const f = animal.frame(d, 100, 80)
     const px = pixelsOf(drawScene(f, 80), 80)
-    const bubble = f.effects.find((fx) => fx.kind === 'bubble')
+    const bubble = defined(f.effects.find((fx) => fx.kind === 'bubble'))
     // A puff has no other bubble pixel next to it, even on a diagonal
-    for (const [x, y] of [
+    const puffs: [number, number][] = [
       [bubble.x - 1, bubble.y - 1],
       [bubble.x - 3, bubble.y - 2],
-    ]) {
-      expect(px[y][x]).toBe(COLORS.bubble)
-      for (const [dx, dy] of [
+    ]
+    for (const [x, y] of puffs) {
+      expect(px[y]?.[x]).toBe(COLORS.bubble)
+      const around: [number, number][] = [
         [-1, -1],
         [0, -1],
         [1, -1],
@@ -746,8 +763,9 @@ test('the dream bubble’s puffs stand apart from its ring', () => {
         [-1, 1],
         [0, 1],
         [1, 1],
-      ]) {
-        expect(px[y + dy][x + dx]).not.toBe(COLORS.bubble)
+      ]
+      for (const [dx, dy] of around) {
+        expect(px[y + dy]?.[x + dx]).not.toBe(COLORS.bubble)
       }
     }
   }
@@ -766,7 +784,7 @@ test('the dream bubble and its dream leave every animal’s fur uncovered', () =
         const f = animal.frame(d, now, 64)
         const bare = pixelsOf(drawScene({ ...f, effects: [] }, 64), 64)
         const full = pixelsOf(drawScene(f, 64), 64)
-        bare.forEach((row, y) => row.forEach((c, x) => c >= 0 && c !== COLORS.k && expect(full[y][x]).toBe(c)))
+        bare.forEach((row, y) => row.forEach((c, x) => c >= 0 && c !== COLORS.k && expect(full[y]?.[x]).toBe(c)))
       }
     }
   }
@@ -777,7 +795,7 @@ test('the cat’s tail tip keeps its outline when it lies down or rolls over', (
     const frame = { animal: 'cat', pose, head: { eye: 'closed', ear: 'down', mouth: 'shut' }, x: 20, effects: [] }
     const px = pixelsOf(drawScene(frame, 40), 40)
     const left = Math.min(...px.map((row) => row.findIndex((c) => c >= 0)).filter((x) => x >= 0))
-    for (const row of px) if (row[left] >= 0) expect(row[left]).toBe(COLORS.k)
+    for (const row of px) if ((row[left] ?? -1) >= 0) expect(row[left]).toBe(COLORS.k)
   }
 })
 
@@ -791,7 +809,7 @@ test('the cat’s tail tip keeps its outline at the top of a bow', () => {
     effects: [],
   }
   const px = pixelsOf(drawScene(frame, 40), 40)
-  for (const c of px[0]) if (c >= 0) expect(c).toBe(COLORS.k)
+  for (const c of defined(px[0])) if (c >= 0) expect(c).toBe(COLORS.k)
 })
 
 test('a reload does not double the redraws', async ($, on) => {
@@ -811,10 +829,10 @@ test('a reload does not double the redraws', async ($, on) => {
 test('a turn that starts while the animal is hidden starts at the time it comes', async ($, on) => {
   const { clock } = stubSession(on)
   await start($)
-  await $.command.run({ command: 'pet', args: 'off' })
+  await pet($, 'off')
   await clock.advance(60_000)
-  await $.turn.start({ turnId: 't1' })
-  await $.command.run({ command: 'pet', args: 'on' })
+  await $.turn.start({ turnId: 't1', text: 'Fix the failing test' })
+  await pet($, 'on')
   // The highest row the animal reaches, with -1 for an empty pixel
   const top = async () => {
     const ui = await $.ui.mount({ ...BAND, surface: 'terminal' })
@@ -850,7 +868,7 @@ test('a render in the Desktop app does not stop the terminal redraws', async ($,
     return { value: undefined }
   })
   await start($)
-  for (const surface of ['terminal', 'desktop']) {
+  for (const surface of ['terminal', 'desktop'] as const) {
     const ui = await $.ui.mount({ ...BAND, surface })
     await ui.unmount()
   }
@@ -864,24 +882,24 @@ test('an event between ticks shows at the next redraw', async ($, on) => {
   await clock.advance(250)
   const cells = async () => {
     const ui = await $.ui.mount({ ...BAND, surface: 'terminal' })
-    const raster = await ui.find({ type: 'Raster' })
+    const raster = defined(await ui.find({ type: 'Raster' }))
     await ui.unmount()
     return raster.props.cells
   }
   const first = await cells()
   expect(await cells()).toBe(first)
-  await $.command.run({ command: 'pet', args: 'pet' })
+  await pet($, 'pet')
   expect(await cells()).not.toBe(first)
 })
 
 test('/pet pet right after /pet on does not say the band is too small', async ($, on) => {
   const { toasts } = stubSession(on)
   await start($)
-  await $.command.run({ command: 'pet', args: 'off' })
+  await pet($, 'off')
   const ui = await $.ui.mount({ ...BAND, surface: 'terminal' })
   await ui.unmount()
-  await $.command.run({ command: 'pet', args: 'on' })
-  await $.command.run({ command: 'pet', args: 'pet' })
+  await pet($, 'on')
+  await pet($, 'pet')
   expect(toasts.join()).not.toContain('rows free')
 })
 
@@ -918,10 +936,10 @@ test('the animal eats its food from the near end', () => {
 
 test('the preview sheet shows each tool call’s activity', () => {
   const frames = Object.fromEntries(framesFor('dog').map(({ label, frame }) => [label, frame]))
-  const kinds = (label: string) => frames[label].effects.map((fx) => fx.kind)
-  expect(frames['sniffing (Grep)'].headLow).toBe(true)
+  const kinds = (label: string) => defined(frames[label]).effects.map((fx) => fx.kind)
+  expect(defined(frames['sniffing (Grep)']).headLow).toBe(true)
   expect(kinds('fetch (Bash)')).toContain('ball')
-  expect(frames['oops (failed command)'].effects.some((fx) => fx.text === '!')).toBe(true)
+  expect(defined(frames['oops (failed command)']).effects.some((fx) => fx.text === '!')).toBe(true)
   expect(kinds('digging (Edit)')).toContain('dirt')
   expect(kinds('pointing (WebFetch), two youngsters (subagents)').filter((k) => k === 'youngster').length).toBe(2)
 })

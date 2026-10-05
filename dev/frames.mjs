@@ -1,14 +1,20 @@
 // Frames for the preview sheet, taken from a scripted session run through
 // the real behavior code in hooks/animal.js
 import * as animal from '../hooks/animal.js'
+/** @import { AnimalFrame } from '../hooks/animal.js' */
 
 export const COLUMNS = 64
 
 // The labeled frames of the session for the named animal
+/**
+ * @param {string} name
+ * @returns {{ label: string, frame: AnimalFrame }[]}
+ */
 export function framesFor(name) {
   const d = animal.createAnimal(() => 0.5)
   animal.setAnimal(d, name)
   let now = 0
+  /** @type {{ label: string, frame: AnimalFrame }[]} */
   const frames = []
 
   // Advances the clock in small steps, as the redraw timer would, and keeps
