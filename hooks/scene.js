@@ -714,9 +714,50 @@ function drawAnimal(f, a, P) {
   return out
 }
 
+/**
+ * The head's parts in a frame: each one a variant, such as an `open` or
+ * `closed` eye, an ear `up`, `down` or `flap`, and a `shut`, `open` or
+ * `tongue` mouth
+ * @typedef {{ eye: string, ear: string, mouth: string }} Head
+ */
+
+/**
+ * Something drawn beside the animal, such as a z, a ball or a heart. Each kind
+ * has fields of its own, such as `x`, `y` and `text`.
+ * @typedef {{ kind: string, [field: string]: any }} Effect
+ */
+
+/**
+ * One moment of the scene: the animal's pose and head, where it stands, and
+ * the effects around it. A pose reads the fields it needs, such as `breath`
+ * or `legPhase`, and takes 0 or false for the others.
+ * @typedef {object} Frame
+ * @property {string} [animal] The animal's name; anything else means the default animal
+ * @property {string} pose `lie`, `sit`, `stand`, `belly` or `bow`
+ * @property {Head} head
+ * @property {number} x The scene x of the animal's center
+ * @property {boolean} [flip] Facing left
+ * @property {number} [dy] Rows to draw the animal lower by
+ * @property {Effect[]} [effects]
+ * @property {number} [breath]
+ * @property {number} [tailLift]
+ * @property {number} [paddle]
+ * @property {number} [wag]
+ * @property {number} [scratch]
+ * @property {number} [headDy]
+ * @property {boolean} [headLow]
+ * @property {number} [legPhase]
+ * @property {boolean} [pawUp]
+ */
+
 // Draws a whole frame: the animal, then its effects and any text, into a grid of
 // columns by SCENE_ROWS cells. Returns the cells as code point, foreground,
 // background triples.
+/**
+ * @param {Frame} f
+ * @param {number} columns
+ * @returns {Uint32Array}
+ */
 export function drawScene(f, columns) {
   const scene = new Canvas(columns, SCENE_PX)
   const a = animalOf(f)

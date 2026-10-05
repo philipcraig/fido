@@ -60,20 +60,31 @@ npx prettier@3.8.1 --check .
 npx prettier@3.8.1 --write .
 ```
 
+## Type-check
+
+The tests are TypeScript, checked against Claude Code's plugin API and the
+types that `hooks/animal.js` and `hooks/scene.js` declare in JSDoc. Claude Code
+writes the API's types to `.claude-plugin/types/` each time it loads the
+plugin, so load it once with `claude --plugin-dir .`, then run:
+
+```bash
+npx -p typescript@5.9.3 tsc -p .
+```
+
 ## CI
 
 `.github/workflows/ci.yml` runs on each push to `main` and each pull request.
 It checks formatting with Prettier, validates the manifests with
-`claude plugin validate .`, and runs the tests.
+`claude plugin validate .`, runs the tests, and type-checks them with `tsc`.
 
-The versions of Claude Code and Prettier it runs are pinned in
+The versions of Claude Code, Prettier and TypeScript it runs are pinned in
 `.github/ci/package-lock.json`, and the actions it uses are pinned to commits.
 The lockfile stays out of the repository root, where the Claude plugin
 directory would take it for dependencies to install for each user. To change a
 version, run `npm install --prefix .github/ci --save-exact <package>@<version>`,
-and keep the Prettier version in this file's commands the same. The workflow passes
-[zizmor](https://docs.zizmor.sh/), the GitHub Actions security linter, with no
-findings.
+and keep the Prettier and TypeScript versions in this file's commands the same.
+The workflow passes [zizmor](https://docs.zizmor.sh/), the GitHub Actions
+security linter, with no findings.
 
 ## Files
 
