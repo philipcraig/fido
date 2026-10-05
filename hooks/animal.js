@@ -49,6 +49,10 @@ const NAPS = {
 }
 
 // Which activity each tool call shows
+/**
+ * @param {unknown} tool
+ * @returns {string}
+ */
 export function activityOf(tool) {
   if (typeof tool !== 'string') return 'think'
   if (/^(Read|Grep|Glob|LS|NotebookRead)$/.test(tool)) return 'sniff'
@@ -99,6 +103,12 @@ export function activityOf(tool) {
  */
 
 /**
+ * A frame while it's being built, before frame() works out where the animal
+ * stands
+ * @typedef {Omit<Frame, 'x' | 'effects'> & { x?: number, effects: Effect[] }} Draft
+ */
+
+/**
  * @param {() => number} [random]
  * @returns {Animal}
  */
@@ -126,17 +136,32 @@ export function createAnimal(random = Math.random) {
 }
 
 // True while anything faster than breathing is on screen
+/**
+ * @param {Animal} d
+ * @param {number} now
+ * @returns {boolean}
+ */
 export function isBusy(d, now) {
   const napping = d.nap !== null && now < d.nap.until
   return d.working || isWalkingHome(d, now) || reactionAt(d, now) !== null || napping || d.tools.length > 0
 }
 
+/**
+ * @param {Animal} d
+ * @param {number} now
+ * @returns {boolean}
+ */
 function isWalkingHome(d, now) {
   const m = d.move
   return !d.working && m !== null && now >= m.at && now < m.until
 }
 
 // Where the animal is at time now, or null before the first frame
+/**
+ * @param {Animal} d
+ * @param {number} now
+ * @returns {number | null}
+ */
 function xAt(d, now) {
   const m = d.move
   if (m === null) return null
@@ -145,6 +170,11 @@ function xAt(d, now) {
 }
 
 // It faces the way it is going, or will go, until it gets there
+/**
+ * @param {Animal} d
+ * @param {number} now
+ * @returns {boolean}
+ */
 function facesLeft(d, now) {
   const m = d.move
   if (m === null) return false
@@ -154,22 +184,42 @@ function facesLeft(d, now) {
 // Sets the animal walking to x `to` from where it is at time now, setting off
 // at time start. Once there it faces left if flip is true. With no flip, it
 // keeps facing the way it walked.
+/**
+ * @param {Animal} d
+ * @param {number} now
+ * @param {number} to
+ * @param {number} speed
+ * @param {boolean} [flip]
+ */
 function moveTo(d, now, to, speed, start = now, flip = undefined) {
   const from = xAt(d, now) ?? to
   const until = start + (Math.abs(to - from) / speed) * 1000
   d.move = { from, to, speed, at: start, until, flip: flip ?? (to === from ? facesLeft(d, now) : to < from) }
 }
 
+/**
+ * @param {Animal} d
+ * @param {number} now
+ * @param {number} x
+ */
 function standAt(d, now, x, flip = facesLeft(d, now)) {
   d.move = { from: x, to: x, speed: 1, at: now, until: now, flip }
 }
 
+/**
+ * @param {Animal} d
+ * @param {number} now
+ */
 function stop(d, now) {
-  if (d.move !== null) standAt(d, now, xAt(d, now))
+  if (d.move !== null) standAt(d, now, /** @type {number} */ (xAt(d, now)))
 }
 
 // Sets the animal walking home. It finishes a droop or a jump first, and naps
 // only some time after it gets there.
+/**
+ * @param {Animal} d
+ * @param {number} now
+ */
 function goHome(d, now) {
   const r = d.reaction
   const start = r !== null && STAY_PUT.includes(r.kind) ? Math.max(now, r.until) : now
@@ -178,6 +228,11 @@ function goHome(d, now) {
 }
 
 // A walk home ends in a nap, but the animal is up and alert until it arrives
+/**
+ * @param {Animal} d
+ * @param {number} now
+ * @returns {boolean}
+ */
 function isAsleep(d, now) {
   const reaction = reactionAt(d, now)
   return !d.working && !isWalkingHome(d, now) && (reaction === null || reaction.kind === 'twitch')
@@ -186,6 +241,11 @@ function isAsleep(d, now) {
 // The reaction playing at time now, or null. None plays on the way home. A
 // finished happy dance leads into lying down to sleep, unless Claude is
 // working again.
+/**
+ * @param {Animal} d
+ * @param {number} now
+ * @returns {Spell | null}
+ */
 function reactionAt(d, now) {
   if (isWalkingHome(d, now)) return null
   let r = d.reaction
@@ -198,22 +258,38 @@ function reactionAt(d, now) {
 // Starts a reaction at time now. During a turn, the animal stops where it is.
 // Otherwise the reaction waits until the animal gets home, and cuts short a
 // droop that holds up the walk.
+/**
+ * @param {Animal} d
+ * @param {string} kind
+ * @param {number} now
+ */
 function react(d, kind, now) {
   if (d.working) stop(d, now)
   else if (d.move !== null && now < d.move.at) moveTo(d, now, d.move.to, HOME_SPEED, now, false)
   const at = Math.max(now, d.move?.until ?? now)
-  d.reaction = { kind, at, until: at + REACTIONS[kind] }
+  d.reaction = { kind, at, until: at + /** @type {number} */ (/** @type {Record<string, number>} */ (REACTIONS)[kind]) }
 }
 
+/**
+ * @param {Animal} d
+ * @param {number} now
+ */
 function scheduleNap(d, now) {
   d.nap = null
   d.nextNapAt = now + 10_000 + d.random() * 15_000
 }
 
+/**
+ * @param {Animal} d
+ * @param {number} now
+ */
 export function noteTurnStart(d, now) {
   // Some naps have the animal sitting, or up and turning round
-  const nap = isAsleep(d, now) ? napPose(d, now, d.home) : null
-  const wasDown = nap !== null ? nap.pose === 'lie' || nap.pose === 'belly' : LYING.includes(reactionAt(d, now)?.kind)
+  const nap = isAsleep(d, now) ? napPose(d, now, /** @type {number} */ (d.home)) : null
+  const wasDown =
+    nap !== null
+      ? nap.pose === 'lie' || nap.pose === 'belly'
+      : LYING.includes(/** @type {string} */ (reactionAt(d, now)?.kind))
   d.working = true
   d.workStartedAt = now
   d.nap = null
@@ -224,6 +300,11 @@ export function noteTurnStart(d, now) {
   if (wasDown) react(d, 'wake', now)
 }
 
+/**
+ * @param {Animal} d
+ * @param {number} now
+ * @param {boolean} isAborted
+ */
 export function noteTurnEnd(d, now, isAborted) {
   d.working = false
   d.tools = []
@@ -239,6 +320,11 @@ export function noteTurnEnd(d, now, isAborted) {
 
 // Only calls made during a turn count. Background work after a turn, such as
 // a subagent that is still running, leaves the animal alone.
+/**
+ * @param {Animal} d
+ * @param {string} id
+ * @param {unknown} tool
+ */
 export function noteToolStart(d, id, tool) {
   if (!d.working) return
   d.tools.push({ id, activity: activityOf(tool) })
@@ -246,6 +332,12 @@ export function noteToolStart(d, id, tool) {
 
 // outcome is 'ok', 'error', or 'denied'. A call that outlives its turn, such
 // as one the user interrupted, has already had its reaction.
+/**
+ * @param {Animal} d
+ * @param {number} now
+ * @param {string} id
+ * @param {string} outcome
+ */
 export function noteToolEnd(d, now, id, outcome) {
   if (!d.tools.some((t) => t.id === id)) return
   d.tools = d.tools.filter((t) => t.id !== id)
@@ -253,17 +345,30 @@ export function noteToolEnd(d, now, id, outcome) {
   else if (outcome === 'denied') react(d, 'droop', now)
 }
 
+/**
+ * @param {Animal} d
+ * @param {unknown} animal
+ */
 export function setAnimal(d, animal) {
   d.animal = animalName(animal)
 }
 
 // kind is 'pet' or 'feed'
+/**
+ * @param {Animal} d
+ * @param {number} now
+ * @param {string} kind
+ */
 export function noteTreat(d, now, kind) {
   scheduleNap(d, now)
   react(d, kind, now)
 }
 
 // The user is typing: a sleeping animal's ear twitches, at most every few seconds
+/**
+ * @param {Animal} d
+ * @param {number} now
+ */
 export function noteTyping(d, now) {
   if (!isAsleep(d, now) || d.nap !== null || now - d.lastTwitchAt < 2500) return
   d.lastTwitchAt = now
@@ -271,14 +376,23 @@ export function noteTyping(d, now) {
 }
 
 // A square wave: true for the first half of each period
+/**
+ * @param {number} now
+ * @param {number} period
+ */
 function blink(now, period) {
   return now % period < period / 2
 }
 
 // The most recent tool still running decides the activity
+/**
+ * @param {Animal} d
+ * @returns {string}
+ */
 function currentActivity(d) {
   for (let i = d.tools.length - 1; i >= 0; i--) {
-    if (d.tools[i].activity !== 'youngster') return d.tools[i].activity
+    const tool = /** @type {{ id: string, activity: string }} */ (d.tools[i])
+    if (tool.activity !== 'youngster') return tool.activity
   }
   return 'think'
 }
@@ -308,7 +422,7 @@ export function frame(d, now, columns) {
   // the band is resized, it heads for the new home. A reaction under way
   // waits, and plays from the start once it is home. A droop or a jump plays
   // where the animal stands.
-  if (!d.working && d.move.to !== home) {
+  if (!d.working && /** @type {Move} */ (d.move).to !== home) {
     const r = isWalkingHome(d, now) ? d.reaction : reactionAt(d, now)
     goHome(d, now)
     if (r !== null && !STAY_PUT.includes(r.kind)) react(d, r.kind, now)
@@ -318,12 +432,13 @@ export function frame(d, now, columns) {
   // Keeps only a reaction that waits for the animal to get home
   else if (d.reaction !== null && d.reaction.until <= now) d.reaction = null
   if (d.nap !== null && now >= d.nap.until) scheduleNap(d, now)
-  if (!d.working && !walking && d.reaction === null && d.nap === null && now >= d.nextNapAt) {
+  if (!d.working && !walking && d.reaction === null && d.nap === null && now >= /** @type {number} */ (d.nextNapAt)) {
     const kinds = Object.keys(NAPS)
-    const kind = kinds[Math.floor(d.random() * kinds.length)]
-    d.nap = { kind, at: now, until: now + NAPS[kind] }
+    const kind = /** @type {string} */ (kinds[Math.floor(d.random() * kinds.length)])
+    d.nap = { kind, at: now, until: now + /** @type {number} */ (/** @type {Record<string, number>} */ (NAPS)[kind]) }
     d.item = d.random() < 0.5 ? 'food' : 'prey'
   }
+  /** @type {Draft} */
   let f
   if (walking) f = walkingFrame(now, HOME_SPEED)
   else
@@ -333,22 +448,37 @@ export function frame(d, now, columns) {
         : d.working
           ? workFrame(d, now, home, left, right)
           : napFrame(d, now, home)
-  f.x = f.x ?? xAt(d, now)
+  f.x = f.x ?? /** @type {number} */ (xAt(d, now))
   f.flip = f.flip ?? facesLeft(d, now)
   f.animal = d.animal
-  resolveEffects(f, now)
-  addYoungsters(d, now, f, columns)
-  return f
+  const done = /** @type {AnimalFrame} */ (f)
+  resolveEffects(done, now)
+  addYoungsters(d, now, done, columns)
+  return done
 }
 
 // Walks toward target at speed pixels a second, then faces left if flip is
 // true. Returns a walking frame while the animal is on its way, or null once
 // it has arrived.
+/**
+ * @param {Animal} d
+ * @param {number} now
+ * @param {number} target
+ * @param {number} speed
+ * @param {boolean} [flip]
+ * @returns {Draft | null}
+ */
 function walkTo(d, now, target, speed, head = ALERT, flip = undefined) {
-  if (d.move.to !== target || d.move.speed !== speed) moveTo(d, now, target, speed, now, flip)
-  return now < d.move.until ? walkingFrame(now, speed, head) : null
+  if (/** @type {Move} */ (d.move).to !== target || /** @type {Move} */ (d.move).speed !== speed)
+    moveTo(d, now, target, speed, now, flip)
+  return now < /** @type {Move} */ (d.move).until ? walkingFrame(now, speed, head) : null
 }
 
+/**
+ * @param {number} now
+ * @param {number} speed
+ * @returns {Draft}
+ */
 function walkingFrame(now, speed, head = ALERT) {
   return {
     pose: 'stand',
@@ -360,6 +490,9 @@ function walkingFrame(now, speed, head = ALERT) {
 }
 
 // Where the animal's head is in the scene, for placing z's, '!', and so on
+/**
+ * @param {AnimalFrame} f
+ */
 function headSpot(f) {
   const facing = f.flip ? -1 : 1
   const x = Math.round(f.x) + facing * (f.pose === 'sit' ? 4 : 10)
@@ -368,23 +501,38 @@ function headSpot(f) {
 
 // Text dx columns past the head, in the direction the animal faces. With no
 // y, it goes in the row of cells above the head and ears.
+/**
+ * @param {Draft} f
+ * @param {string} s
+ * @param {number} dx
+ * @param {number | undefined} y
+ * @param {number} color
+ */
 function text(f, s, dx, y, color) {
   f.effects.push({ kind: 'headText', text: s, dx, y, color })
 }
 
 // Three z's drifting up and away from the head
+/**
+ * @param {Draft} f
+ */
 function addZs(f) {
   f.effects.push({ kind: 'zs' })
 }
 
 // Turns effects placed relative to the head into scene positions, once the
 // frame's x and direction are known
+/**
+ * @param {AnimalFrame} f
+ * @param {number} now
+ */
 function resolveEffects(f, now) {
   const spot = headSpot(f)
   const facing = f.flip ? -1 : 1
   // Text fills a whole cell, so the cell above the one that holds spot.top,
   // the head's outline, is the lowest that keeps clear of the head
   const above = 2 * Math.floor(spot.top / 2) - 1
+  /** @type {Effect[]} */
   const out = []
   for (const fx of f.effects ?? []) {
     if (fx.kind === 'headText') {
@@ -418,6 +566,10 @@ function resolveEffects(f, now) {
   f.effects = out
 }
 
+/**
+ * @param {number} now
+ * @returns {Draft}
+ */
 function sleepFrame(now) {
   return {
     pose: 'lie',
@@ -429,6 +581,12 @@ function sleepFrame(now) {
 
 // Whether the animal lies, sits, or stands at time now in its nap, where it
 // is, and whether it faces left if that differs from where it walked
+/**
+ * @param {Animal} d
+ * @param {number} now
+ * @param {number} home
+ * @returns {{ pose: string, x: number, flip?: boolean }}
+ */
 function napPose(d, now, home) {
   const nap = d.nap
   const t = nap === null ? 0 : now - nap.at
@@ -446,7 +604,14 @@ function napPose(d, now, home) {
   return { pose: 'lie', x: home }
 }
 
+/**
+ * @param {Animal} d
+ * @param {number} now
+ * @param {number} home
+ * @returns {Draft}
+ */
 function napFrame(d, now, home) {
+  /** @type {Draft} */
   const f = { ...sleepFrame(now), ...napPose(d, now, home) }
   const nap = d.nap
   if (nap === null) {
@@ -501,8 +666,15 @@ function napFrame(d, now, home) {
   return f
 }
 
+/**
+ * @param {Animal} d
+ * @param {number} now
+ * @param {number} home
+ * @param {number} columns
+ * @returns {Draft}
+ */
 function reactionFrame(d, now, home, columns) {
-  const r = d.reaction
+  const r = /** @type {Spell} */ (d.reaction)
   const t = Math.max(0, now - r.at)
   switch (r.kind) {
     case 'twitch': {
@@ -516,6 +688,7 @@ function reactionFrame(d, now, home, columns) {
       if (t < 800) return { pose: 'bow', head: { ...ALERT, mouth: 'open' }, wag: blink(t, 160) ? 1 : 0, effects: [] }
       return { pose: 'sit', head: ALERT, wag: 1, effects: [] }
     case 'oops': {
+      /** @type {Draft} */
       const f = {
         pose: d.tools.length > 0 ? 'stand' : 'sit',
         head: { eye: 'open', ear: t < 600 ? 'up' : 'down', mouth: 'shut' },
@@ -528,6 +701,7 @@ function reactionFrame(d, now, home, columns) {
     case 'droop':
       return { pose: 'sit', head: { eye: 'open', ear: 'down', mouth: 'shut' }, headDy: 1, wag: -1, effects: [] }
     case 'happy': {
+      /** @type {Draft} */
       const f = {
         pose: 'sit',
         head: { eye: 'open', ear: 'up', mouth: tongueOr(d, 'open') },
@@ -548,12 +722,14 @@ function reactionFrame(d, now, home, columns) {
     case 'feed': {
       // Turns round to eat only if the food would run off the band ahead and
       // fits behind
+      /** @param {boolean} flip */
       const fits = (flip) => {
-        const [first, last] = foodSpan(animalOf(d), Math.round(xAt(d, now)), flip)
+        const [first, last] = foodSpan(animalOf(d), Math.round(/** @type {number} */ (xAt(d, now))), flip)
         return first >= 0 && last < columns
       }
       const flip = sideThatFits(facesLeft(d, now), fits)
       if (t < 2800) {
+        /** @type {Draft} */
         const f = {
           flip,
           pose: 'stand',
@@ -565,6 +741,7 @@ function reactionFrame(d, now, home, columns) {
         f.effects.push({ kind: 'food', left: 1 - Math.floor(t / 700) / 4 })
         return f
       }
+      /** @type {Draft} */
       const f = {
         flip,
         pose: 'sit',
@@ -576,6 +753,7 @@ function reactionFrame(d, now, home, columns) {
       return f
     }
     case 'pet': {
+      /** @type {Draft} */
       const f = {
         pose: 'belly',
         head: { eye: 'open', ear: 'down', mouth: tongueOr(d, 'open') },
@@ -590,10 +768,22 @@ function reactionFrame(d, now, home, columns) {
 }
 
 // Cats don't pant or loll their tongue
+/**
+ * @param {Animal} d
+ * @param {string} mouth
+ */
 function tongueOr(d, mouth) {
   return animalOf(d).tongue === false ? mouth : 'tongue'
 }
 
+/**
+ * @param {Animal} d
+ * @param {number} now
+ * @param {number} home
+ * @param {number} left
+ * @param {number} right
+ * @returns {Draft}
+ */
 function workFrame(d, now, home, left, right) {
   const activity = currentActivity(d)
   const tired = now - d.workStartedAt > PANT_AFTER_MS
@@ -603,10 +793,10 @@ function workFrame(d, now, home, left, right) {
     // Roams between two points: slowly with its nose down, or at a run
     const fast = activity === 'fetch'
     const ends = fast ? [left, right] : [Math.max(left, home - 22), home]
-    if (d.roamTarget === null || !ends.includes(d.roamTarget)) d.roamTarget = ends[0]
+    if (d.roamTarget === null || !ends.includes(d.roamTarget)) d.roamTarget = /** @type {number} */ (ends[0])
     let f = walkTo(d, now, d.roamTarget, fast ? 18 : 5, head)
     if (f === null) {
-      d.roamTarget = d.roamTarget === ends[0] ? ends[1] : ends[0]
+      d.roamTarget = /** @type {number} */ (d.roamTarget === ends[0] ? ends[1] : ends[0])
       f = walkTo(d, now, d.roamTarget, fast ? 18 : 5, head) ?? { pose: 'stand', head, effects: [] }
     }
     if (fast) {
@@ -615,7 +805,7 @@ function workFrame(d, now, home, left, right) {
       const bounce = Math.abs(Math.sin(now / 160))
       f.effects.push({
         kind: 'ball',
-        x: Math.round(xAt(d, now)) + ahead * 15 - 1,
+        x: Math.round(/** @type {number} */ (xAt(d, now))) + ahead * 15 - 1,
         y: SCENE_PX - 3 - Math.round(bounce * 5),
       })
     } else {
@@ -632,6 +822,7 @@ function workFrame(d, now, home, left, right) {
 
   switch (activity) {
     case 'dig': {
+      /** @type {Draft} */
       const f = {
         pose: 'stand',
         head,
@@ -669,18 +860,33 @@ function workFrame(d, now, home, left, right) {
 }
 
 // The side given by preferred, a boolean, unless only the other side fits
+/**
+ * @param {boolean} preferred
+ * @param {(side: boolean) => boolean} fits
+ */
 function sideThatFits(preferred, fits) {
   return !fits(preferred) && fits(!preferred) ? !preferred : preferred
 }
 
 // One youngster for each subagent that is running, playing behind the animal,
 // or ahead of it when they would run off the band behind
+/**
+ * @param {Animal} d
+ * @param {number} now
+ * @param {AnimalFrame} f
+ * @param {number} columns
+ */
 function addYoungsters(d, now, f, columns) {
   const youngsters = Math.min(3, d.tools.filter((t) => t.activity === 'youngster').length)
   // Where youngster i's sprite starts, to the animal's left or right
+  /**
+   * @param {boolean} onLeft
+   * @param {number} i
+   */
   const leftOf = (onLeft, i) =>
     Math.round(f.x) + (onLeft ? -(CENTER + 4 + i * 10) - (YOUNGSTER_W - 1) : CENTER + 4 + i * 10)
   // Its outline adds a column on each side
+  /** @param {boolean} onLeft */
   const fits = (onLeft) =>
     leftOf(onLeft, youngsters - 1) >= 0 && leftOf(onLeft, youngsters - 1) + YOUNGSTER_W + 2 <= columns
   const onLeft = sideThatFits(!f.flip, fits)

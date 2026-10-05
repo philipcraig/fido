@@ -1,8 +1,9 @@
 {
   "extends": "./.claude-plugin/types/tsconfig.json",
   "compilerOptions": {
-    // Types the tests' imports of the hooks' JavaScript from its JSDoc,
-    // without checking the JavaScript itself
-    "allowJs": true
+    // Checks the hooks' JavaScript against the types in its JSDoc, as well
+    // as the tests
+    "allowJs": true,
+    "checkJs": true
   }
 }

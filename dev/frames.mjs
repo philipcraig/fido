@@ -19,16 +19,26 @@ export function framesFor(name) {
 
   // Advances the clock in small steps, as the redraw timer would, and keeps
   // the frame at the end
+  /**
+   * @param {number} ms
+   * @param {string} label
+   */
   function at(ms, label) {
     const end = now + ms
+    /** @type {AnimalFrame | undefined} */
     let f
     while (now < end) {
       now = Math.min(end, now + 125)
       f = animal.frame(d, now, COLUMNS)
     }
-    frames.push({ label, frame: f })
+    // ms is never 0, so the loop always runs and f is always a frame
+    frames.push({ label, frame: /** @type {AnimalFrame} */ (f) })
   }
 
+  /**
+   * @param {string} kind
+   * @param {number} ms
+   */
   function nap(kind, ms) {
     d.reaction = null
     d.nap = { kind, at: now, until: now + 10_000 }

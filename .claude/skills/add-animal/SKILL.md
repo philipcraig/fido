@@ -13,6 +13,7 @@ allowed-tools:
   - Bash(node dev/preview.mjs *)
   - Bash(dev/live.sh *)
   - Bash(claude plugin test *)
+  - Bash(npx --yes -p typescript@5.9.3 tsc *)
   - Bash(claude plugin validate *)
   - Bash(npx --yes prettier@3.8.1 *)
   - Bash(mkdir -p .preview)
@@ -111,7 +112,10 @@ All the drawing is in `hooks/scene.js`:
   such as a mane down the neck, add a flag for it to the animal. Draw that part
   in `POSES` behind the flag, in every pose where it shows (`lie`, `sit`,
   `stand`, `belly`, `bow`), so that the other animals draw exactly as before.
-  Explain the flag in the comment above `ANIMALS`.
+  Explain the flag in the comment above `ANIMALS`, and declare it in the
+  `HeadedBreed` or `EridianBreed` type there.
+- The hooks are type-checked, so give any new function a JSDoc type for each
+  parameter, as the functions around it have.
 
 Behavior lives in `hooks/animal.js` and reads the animal only through
 `sound`, `tongue` and `dreams`. A new animal shouldn't need changes there.
@@ -176,7 +180,13 @@ npx --yes prettier@3.8.1 --write .
 npx --yes prettier@3.8.1 --check .
 claude plugin validate .
 claude plugin test
+npx --yes -p typescript@5.9.3 tsc -p .
 ```
+
+`tsc` needs the plugin API's types in `.claude-plugin/types/`, which Claude
+Code writes whenever it loads the plugin. If they aren't there yet, skip `tsc`
+until step 10 has loaded the plugin, then run it. CI's Type-check job runs it
+too.
 
 ## 9. Update the words
 

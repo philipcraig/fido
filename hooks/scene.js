@@ -26,13 +26,66 @@ export const COLORS = {
   dirt: 0x8b6239,
   bubble: 0xaebccb,
   heart: 0xe0507a,
+  l: 0x6b6450, // limbs, for an eridian
 }
+
+/**
+ * The colors an animal is drawn in, by palette letter
+ * @typedef {typeof COLORS} Palette
+ */
+
+/**
+ * What every animal has: its colors, its babies (a body for each step, or one
+ * for both), its sleepy noise, and the two things it dreams of
+ * @typedef {object} BreedBase
+ * @property {Partial<Palette>} colors
+ * @property {string[][]} youngster
+ * @property {string} sound
+ * @property {{ food: string, prey: string }} dreams
+ * @property {boolean} [tongue] False for an animal that never pants or lolls its tongue
+ * @property {boolean} [hump]
+ */
+
+/**
+ * An ear's position
+ * @typedef {'down' | 'up' | 'flap'} Ear
+ */
+
+/**
+ * An animal with a head, drawn by POSES: the head sprite, where its eye and
+ * mouth go, its ears in each position, and the flags that shape its body
+ * @typedef {BreedBase & {
+ *   eridian?: false,
+ *   head: string[],
+ *   eye: [number, number],
+ *   mouth: [number, number],
+ *   ears: Record<Ear, string[]>,
+ *   earRow: Record<Ear, number>,
+ *   headTop?: number,
+ *   legs?: number,
+ *   longTail?: boolean,
+ *   collar?: boolean,
+ * }} HeadedBreed
+ */
+
+/**
+ * An eridian, drawn by ERIDIAN_POSES
+ * @typedef {BreedBase & { eridian: true }} EridianBreed
+ */
+
+/** @typedef {HeadedBreed | EridianBreed} Breed */
+
+/**
+ * One part of a pose, drawn into a canvas of its own to be outlined
+ * @typedef {(c: Canvas) => void} Part
+ */
 
 // What sets one animal apart from another: its colors, head, ears, babies
 // (a body for each step, or one for both), and the two things it dreams of. Poses read the rest of their shape from
 // the flags (hump, legs, longTail, collar). An eridian has no head, ears or
 // tail: ERIDIAN_POSES draw it instead, as a carapace on five limbs, one of
 // which it raises where other animals prick up their ears.
+/** @satisfies {Record<string, Breed>} */
 export const ANIMALS = {
   camel: {
     colors: {
@@ -146,43 +199,68 @@ export const ANIMALS = {
   },
 }
 
+// ANIMALS, looked up by any name
+/** @type {Record<string, Breed>} */
+const BREEDS = ANIMALS
+
 export const DEFAULT_ANIMAL = 'dog'
 
+/**
+ * @param {unknown} name
+ * @returns {name is string}
+ */
 export function isAnimal(name) {
   return typeof name === 'string' && Object.hasOwn(ANIMALS, name)
 }
 
 // Anything that isn't an animal's name, such as a frame's missing animal,
 // means the default animal
+/**
+ * @param {unknown} name
+ * @returns {string}
+ */
 export function animalName(name) {
   return isAnimal(name) ? name : DEFAULT_ANIMAL
 }
 
 // The animal that a frame, or the animal's state, names
+/**
+ * @param {{ animal?: string }} f
+ * @returns {Breed}
+ */
 export function animalOf(f) {
-  return ANIMALS[animalName(f.animal)]
+  return /** @type {Breed} */ (BREEDS[animalName(f.animal)])
 }
 
+/** @type {Record<string, Palette>} */
 const PALETTES = Object.fromEntries(Object.entries(ANIMALS).map(([name, a]) => [name, { ...COLORS, ...a.colors }]))
 
+/**
+ * @param {{ animal?: string }} f
+ * @returns {Palette}
+ */
 function colorsOf(f) {
-  return PALETTES[animalName(f.animal)]
+  return /** @type {Palette} */ (PALETTES[animalName(f.animal)])
 }
 
 // The first and last rows of the head sprite that the head or an ear, in any
 // position, draws on. An eridian has neither.
-const REACH = Object.fromEntries(
-  Object.entries(ANIMALS)
-    .filter(([, a]) => !a.eridian)
-    .map(([name, a]) => {
-      const rows = Object.entries(a.ears).flatMap(([ear, sprite]) => sprite.map((row, j) => [row, a.earRow[ear] + j]))
-      rows.push(...a.head.map((row, j) => [row, j]))
-      const drawn = rows.filter(([row]) => /[^.]/.test(row)).map(([, j]) => j)
-      return [name, { top: Math.min(...drawn), bottom: Math.max(...drawn) }]
-    }),
-)
+/** @type {Record<string, { top: number, bottom: number }>} */
+const REACH = {}
+for (const [name, a] of Object.entries(BREEDS)) {
+  if (a.eridian) continue
+  /** @type {[string, number][]} */
+  const rows = []
+  for (const ear of /** @type {Ear[]} */ (['down', 'up', 'flap'])) {
+    rows.push(...a.ears[ear].map((row, j) => /** @type {[string, number]} */ ([row, a.earRow[ear] + j])))
+  }
+  rows.push(...a.head.map((row, j) => /** @type {[string, number]} */ ([row, j])))
+  const drawn = rows.filter(([row]) => /[^.]/.test(row)).map(([, j]) => j)
+  REACH[name] = { top: Math.min(...drawn), bottom: Math.max(...drawn) }
+}
 
 // Things an animal can dream of, with the palette letter each sprite uses
+/** @type {Record<string, { rows: string[], colors: Record<string, number> }>} */
 const DREAMS = {
   bone: { rows: ['w.....w', 'wwwwwww', 'w.....w'], colors: { w: 0xf0ead8 } },
   squirrel: { rows: ['ss...', 'sss.s', '.ssss', '.sss.'], colors: { s: 0xb06a3a } },
@@ -198,22 +276,42 @@ const DREAMS = {
 const HEART = ['h.h', 'hhh', '.h.']
 // A youngster's legs on each step of its hop, under its body
 const YOUNGSTER_LEGS = ['.b.b.b.b.', 'b..b..b.b']
-export const YOUNGSTER_W = YOUNGSTER_LEGS[0].length
+export const YOUNGSTER_W = /** @type {string} */ (YOUNGSTER_LEGS[0]).length
 // The food lands this many columns ahead of the animal's center
 const FOOD_AHEAD = 12
 
+// A dream sprite, by its name
+/** @param {string} name */
+function dreamOf(name) {
+  return /** @type {{ rows: string[], colors: Record<string, number> }} */ (DREAMS[name])
+}
+
 export class Canvas {
+  /**
+   * @param {number} w
+   * @param {number} h
+   */
   constructor(w, h) {
     this.w = w
     this.h = h
     this.px = new Int32Array(w * h).fill(-1)
   }
 
+  /**
+   * @param {number} x
+   * @param {number} y
+   * @returns {number}
+   */
   get(x, y) {
     if (x < 0 || y < 0 || x >= this.w || y >= this.h) return -1
-    return this.px[y * this.w + x]
+    return /** @type {number} */ (this.px[y * this.w + x])
   }
 
+  /**
+   * @param {number} x
+   * @param {number} y
+   * @param {number} c
+   */
   set(x, y, c) {
     x = Math.round(x)
     y = Math.round(y)
@@ -223,6 +321,13 @@ export class Canvas {
 
   // Fills the pixels whose centers lie inside the ellipse. With onlyOver, it
   // paints only pixels that are already set, to add markings to a shape.
+  /**
+   * @param {number} cx
+   * @param {number} cy
+   * @param {number} rx
+   * @param {number} ry
+   * @param {number} c
+   */
   ellipse(cx, cy, rx, ry, c, onlyOver = false) {
     for (let y = Math.floor(cy - ry); y <= Math.ceil(cy + ry); y++) {
       for (let x = Math.floor(cx - rx); x <= Math.ceil(cx + rx); x++) {
@@ -235,10 +340,24 @@ export class Canvas {
     }
   }
 
+  /**
+   * @param {number} x0
+   * @param {number} y0
+   * @param {number} x1
+   * @param {number} y1
+   * @param {number} c
+   */
   rect(x0, y0, x1, y1, c) {
     for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) this.set(x, y, c)
   }
 
+  /**
+   * @param {number} x0
+   * @param {number} y0
+   * @param {number} x1
+   * @param {number} y1
+   * @param {number} c
+   */
   line(x0, y0, x1, y1, c, thick = 1) {
     const steps = Math.max(1, Math.ceil(Math.max(Math.abs(x1 - x0), Math.abs(y1 - y0)) * 2))
     for (let i = 0; i <= steps; i++) {
@@ -249,22 +368,32 @@ export class Canvas {
   }
 
   // Draws a sprite of palette letters, with '.' left clear
+  /**
+   * @param {string[]} rows
+   * @param {number} x
+   * @param {number} y
+   * @param {Record<string, number>} [palette]
+   */
   stamp(rows, x, y, palette = COLORS, flip = false) {
     rows.forEach((row, j) => {
       for (let i = 0; i < row.length; i++) {
-        const ch = row[i]
+        const ch = /** @type {string} */ (row[i])
         if (ch === '.') continue
         const col = flip ? x + row.length - 1 - i : x + i
-        this.set(col, y + j, palette[ch])
+        this.set(col, y + j, /** @type {number} */ (palette[ch]))
       }
     })
   }
 
   // Draws other onto this canvas, shifted, and mirrored when flip is set
+  /**
+   * @param {Canvas} other
+   * @param {boolean} [flip]
+   */
   over(other, dx = 0, dy = 0, flip = false) {
     for (let y = 0; y < other.h; y++) {
       for (let x = 0; x < other.w; x++) {
-        const c = other.px[y * other.w + x]
+        const c = /** @type {number} */ (other.px[y * other.w + x])
         if (c < 0) continue
         this.set(flip ? dx + other.w - 1 - x : dx + x, dy + y, c)
       }
@@ -296,13 +425,20 @@ const GY = SCENE_PX - 1
 // The top-left of the head sprite in the animal canvas for frame f. The head
 // rests at least a row below the animal's headTop row, so a tilt up reaches
 // headTop and no further. An animal without a headTop has no limit.
+/**
+ * @param {Frame} f
+ * @param {HeadedBreed} a
+ * @returns {[number, number]}
+ */
 function headAt(f, a) {
-  const at = {
+  /** @type {Record<string, [number, number]>} */
+  const spots = {
     lie: [OX + 15, GY - 8],
     sit: [OX + 8, GY - 13],
     stand: [OX + 13, GY - 12 - (a.legs ?? 0) + (f.headLow ? 5 : 0)],
     bow: [OX + 14, GY - 9],
-  }[f.pose]
+  }
+  const at = /** @type {[number, number]} */ (spots[f.pose])
   const top = a.headTop ?? -Infinity
   const rest = Math.max(top + 1, at[1])
   return [at[0], Math.max(top, rest + (f.headDy ?? 0))]
@@ -310,15 +446,29 @@ function headAt(f, a) {
 
 // The scene row just above the top of the head and ears in frame f, for
 // placing z's and thought bubbles over it
+/**
+ * @param {Frame} f
+ * @returns {number}
+ */
 export function headTopRow(f) {
   const name = animalName(f.animal)
-  if (ANIMALS[name].eridian) return eridianTop(f) - 1
+  const a = /** @type {Breed} */ (BREEDS[name])
+  if (a.eridian) return eridianTop(f) - 1
+  const reach = /** @type {{ top: number, bottom: number }} */ (REACH[name])
   // On its back the head is upside down, resting on the ground
-  if (f.pose === 'belly') return GY - 6 + (7 - REACH[name].bottom) - 1
-  return headAt(f, ANIMALS[name])[1] + REACH[name].top - 1
+  if (f.pose === 'belly') return GY - 6 + (7 - reach.bottom) - 1
+  return headAt(f, a)[1] + reach.top - 1
 }
 
 // Draws the head with its ear, eye, and mouth variants into canvas c
+/**
+ * @param {Canvas} c
+ * @param {number} x
+ * @param {number} y
+ * @param {Head} head
+ * @param {HeadedBreed} a
+ * @param {Palette} P
+ */
 function drawHead(c, x, y, head, a, P) {
   c.stamp(a.head, x, y, P)
   const [ex, ey] = a.eye
@@ -330,13 +480,22 @@ function drawHead(c, x, y, head, a, P) {
     c.rect(x + mx - 1, y + my + 1, x + mx + 2, y + my + 1, P.w)
   }
   if (head.mouth === 'tongue') c.rect(x + mx + 2, y + my + 1, x + mx + 2, y + my + 2, P.p)
-  const ear = head.ear ?? 'down'
+  const ear = /** @type {Ear} */ (head.ear ?? 'down')
   c.stamp(a.ears[ear], x, y + a.earRow[ear], P)
 }
 
 // A tail from the rump at (x0, y0) to its tip at (x1, y1). A long tail
 // reaches half as far again, short of column 0 and row 0 so the tip keeps its
 // outline.
+/**
+ * @param {Canvas} c
+ * @param {HeadedBreed} a
+ * @param {Palette} P
+ * @param {number} x0
+ * @param {number} y0
+ * @param {number} x1
+ * @param {number} y1
+ */
 function drawTail(c, a, P, x0, y0, x1, y1) {
   if (a.longTail) {
     x1 = Math.max(1, Math.round(x0 + (x1 - x0) * 1.5))
@@ -346,12 +505,23 @@ function drawTail(c, a, P, x0, y0, x1, y1) {
   c.set(x1, y1, P.t)
 }
 
+/**
+ * @param {Canvas} c
+ * @param {HeadedBreed} a
+ * @param {Palette} P
+ * @param {number} cx
+ * @param {number} cy
+ * @param {number} rx
+ * @param {number} ry
+ */
 function drawHump(c, a, P, cx, cy, rx, ry) {
   if (a.hump) c.ellipse(cx, cy, rx, ry, P.b)
 }
 
 // Each pose returns its parts back to front. Every part is outlined on its
 // own, so a part in front gets a dark edge over the part behind it.
+/** @typedef {(f: Frame, a: HeadedBreed, P: Palette) => Part[]} Pose */
+/** @type {Record<string, Pose>} */
 const POSES = {
   lie(f, a, P) {
     const breath = f.breath ?? 0
@@ -429,7 +599,7 @@ const POSES = {
   stand(f, a, P) {
     const phase = f.legPhase ?? 0
     const wag = f.wag ?? 0
-    const swing = [0, 1, 0, -1][phase % 4]
+    const swing = /** @type {number} */ ([0, 1, 0, -1][phase % 4])
     const low = f.headLow ? 5 : 0
     const up = a.legs ?? 0
     return [
@@ -466,12 +636,14 @@ const POSES = {
     return [
       (c) => drawTail(c, a, P, OX + 1, GY - 1, OX - 4, GY),
       (c) => {
-        for (const [x, k] of [
+        /** @type {[number, number][]} */
+        const paws = [
           [3, kick],
           [6, -kick],
           [12, -kick],
           [15, kick],
-        ]) {
+        ]
+        for (const [x, k] of paws) {
           c.line(OX + x, GY - 3, OX + x + k, GY - 7, P.b, 2)
           c.rect(OX + x + k, GY - 8, OX + x + k + 1, GY - 8, P.w)
         }
@@ -521,23 +693,38 @@ const POSES = {
 
 // The top row of an eridian's carapace, or of its raised feet when it lies on
 // its back, in frame f
+/**
+ * @param {Frame} f
+ * @returns {number}
+ */
 function eridianTop(f) {
   const tilt = f.headDy ?? 0
-  return {
+  /** @type {Record<string, number>} */
+  const tops = {
     stand: 2 + (f.headLow ? 2 : 0) + tilt,
     sit: 4 + tilt,
     lie: 8,
     belly: 5,
     bow: 2,
-  }[f.pose]
+  }
+  return /** @type {number} */ (tops[f.pose])
 }
 
 // An eridian's carapace: a mottled dome rx wide, with its top row at top. On
 // its back, the darker underside is uppermost.
+/**
+ * @param {Canvas} c
+ * @param {Palette} P
+ * @param {number} cx
+ * @param {number} top
+ * @param {number} rx
+ * @param {number} ry
+ */
 function drawCarapace(c, P, cx, top, rx, ry, upsideDown = false) {
   const cy = top + ry - 0.5
   c.ellipse(cx + 0.5, cy, rx, ry, P.b)
   c.ellipse(cx + 0.5, upsideDown ? top + 0.2 : top + 2 * ry - 0.7, rx - 1.5, 0.9, P.d, true)
+  /** @type {[number, number][]} */
   const spots = [
     [-4, 1],
     [2, 1],
@@ -555,6 +742,13 @@ function drawCarapace(c, P, cx, top, rx, ry, upsideDown = false) {
 }
 
 // A jointed limb from the hip through the knee to a foot drawn outward
+/**
+ * @param {Canvas} c
+ * @param {Palette} P
+ * @param {[number, number]} hip
+ * @param {[number, number]} knee
+ * @param {[number, number]} foot
+ */
 function drawLimb(c, P, hip, knee, foot) {
   c.line(...hip, ...knee, P.l)
   c.line(...knee, ...foot, P.l)
@@ -564,8 +758,16 @@ function drawLimb(c, P, hip, knee, foot) {
 }
 
 // The raised limb, waving its three-fingered hand above the carapace's front
+/**
+ * @param {Canvas} c
+ * @param {Palette} P
+ * @param {number} cx
+ * @param {number} top
+ * @param {string} ear
+ */
 function drawArm(c, P, cx, top, ear) {
   const wave = ear === 'flap' ? 1 : 0
+  /** @type {[number, number]} */
   const wrist = [cx + 11 + wave, top]
   c.line(cx + 5, top + 3, cx + 9, top + 2, P.l)
   c.line(cx + 9, top + 2, ...wrist, P.l)
@@ -575,11 +777,20 @@ function drawArm(c, P, cx, top, ear) {
 }
 
 // The vent it talks through, open on top of the carapace
+/**
+ * @param {Canvas} c
+ * @param {Palette} P
+ * @param {number} cx
+ * @param {number} top
+ * @param {Head} head
+ */
 function drawVent(c, P, cx, top, head) {
   if (head.mouth === 'open' || head.mouth === 'tongue') c.rect(cx, top, cx + 1, top, P.n)
 }
 
 // An eridian's poses, which read the same frame values as POSES
+/** @typedef {(f: Frame, a: EridianBreed, P: Palette) => Part[]} EridianPose */
+/** @type {Record<string, EridianPose>} */
 const ERIDIAN_POSES = {
   lie(f, a, P) {
     const breath = f.breath ?? 0
@@ -631,7 +842,7 @@ const ERIDIAN_POSES = {
     const top = eridianTop(f)
     const hip = top + 5
     const cx = OX + 9
-    const swing = [0, 1, 0, -1][(f.legPhase ?? 0) % 4]
+    const swing = /** @type {number} */ ([0, 1, 0, -1][(f.legPhase ?? 0) % 4])
     const paw = f.pawUp ? 2 : 0
     const raised = f.head.ear === 'up' || f.head.ear === 'flap'
     return [
@@ -658,13 +869,15 @@ const ERIDIAN_POSES = {
     const cx = OX + 9
     return [
       (c) => {
-        for (const [dx, k] of [
+        /** @type {[number, number][]} */
+        const limbs = [
           [-6, kick],
           [-3, -kick],
           [0, kick],
           [3, -kick],
           [6, kick],
-        ]) {
+        ]
+        for (const [dx, k] of limbs) {
           const out = Math.sign(dx)
           drawLimb(c, P, [cx + dx, GY - 4], [cx + dx + out, GY - 6], [cx + dx + out * 2 + k, GY - 8])
         }
@@ -698,15 +911,24 @@ const ERIDIAN_POSES = {
 export const CENTER = OX + 9
 
 // The scene x of the animal canvas's left edge, for an animal centered on f.x
+/** @param {{ x: number, flip?: boolean }} f */
 export function animalLeft(f) {
   return Math.round(f.x) - (f.flip ? ANIMAL_W - 1 - CENTER : CENTER)
 }
 
 // Draws animal a with palette P for frame f into an ANIMAL_W by SCENE_PX
 // canvas, facing right
+/**
+ * @param {Frame} f
+ * @param {Breed} a
+ * @param {Palette} P
+ */
 function drawAnimal(f, a, P) {
   const out = new Canvas(ANIMAL_W, SCENE_PX)
-  for (const part of (a.eridian ? ERIDIAN_POSES : POSES)[f.pose](f, a, P)) {
+  const parts = a.eridian
+    ? /** @type {EridianPose} */ (ERIDIAN_POSES[f.pose])(f, a, P)
+    : /** @type {Pose} */ (POSES[f.pose])(f, a, P)
+  for (const part of parts) {
     const c = new Canvas(ANIMAL_W, SCENE_PX)
     part(c)
     out.over(c.outlined())
@@ -763,6 +985,7 @@ export function drawScene(f, columns) {
   const a = animalOf(f)
   const P = colorsOf(f)
   scene.over(drawAnimal(f, a, P), animalLeft(f), f.dy ?? 0, f.flip)
+  /** @type {Effect[]} */
   const texts = []
   for (const fx of f.effects ?? []) {
     switch (fx.kind) {
@@ -793,17 +1016,30 @@ export function drawScene(f, columns) {
 }
 
 // A youngster's sprite on one step of its hop
+/**
+ * @param {Breed} a
+ * @param {number} step
+ * @returns {string[]}
+ */
 function youngsterRows(a, step) {
-  return [...a.youngster[step % a.youngster.length], YOUNGSTER_LEGS[step]]
+  return [
+    .../** @type {string[]} */ (a.youngster[step % a.youngster.length]),
+    /** @type {string} */ (YOUNGSTER_LEGS[step]),
+  ]
 }
 
+/**
+ * @param {string[]} rows
+ * @param {Record<string, number>} palette
+ */
 function spriteCanvas(rows, palette, outline = true) {
-  const c = new Canvas(rows[0].length, rows.length)
+  const c = new Canvas(/** @type {string} */ (rows[0]).length, rows.length)
   c.stamp(rows, 0, 0, palette)
   return outline ? padOutline(c) : c
 }
 
 // Outlines a small sprite, growing it by a pixel on each side for the edge
+/** @param {Canvas} c */
 function padOutline(c) {
   const big = new Canvas(c.w + 2, c.h + 2)
   big.over(c, 1, 1)
@@ -816,13 +1052,18 @@ const RING = (() => {
   ring.ellipse(6.5, 3.5, 6.5, 3.5, COLORS.bubble)
   const inner = new Canvas(13, 7)
   inner.ellipse(6.5, 3.5, 5.5, 2.5, 1)
-  for (let i = 0; i < inner.px.length; i++) if (inner.px[i] >= 0) ring.px[i] = -1
+  for (let i = 0; i < inner.px.length; i++) if (/** @type {number} */ (inner.px[i]) >= 0) ring.px[i] = -1
   return ring
 })()
 
 // A thought bubble with one of the animal's dreams in it, and small puffs
 // leading down to its head at (fx.x, fx.y). An animal with a hump has the
 // bubble behind the hump, with more puffs leading over it.
+/**
+ * @param {Canvas} scene
+ * @param {Effect} fx
+ * @param {Breed} a
+ */
 function drawBubble(scene, fx, a) {
   const bx = Math.max(0, fx.x - (a.hump ? 28 : 17))
   // The puffs rise from the head, and stop a column short of the ring
@@ -832,15 +1073,21 @@ function drawBubble(scene, fx, a) {
     x -= k === 0 ? 2 : 3
   }
   scene.over(RING, bx, 0)
-  const dream = DREAMS[a.dreams[fx.item]]
+  const dream = dreamOf(a.dreams[/** @type {'food' | 'prey'} */ (fx.item)])
   const item = spriteCanvas(dream.rows, dream.colors, false)
   scene.over(item, bx + Math.floor((13 - item.w) / 2), Math.floor((7 - item.h) / 2), fx.item === 'prey' && fx.itemFlip)
 }
 
 // The first and last scene columns that animal a's whole favorite food covers,
 // outline included, when it lies in front of the animal centered on x
+/**
+ * @param {Breed} a
+ * @param {number} x
+ * @param {boolean} flip
+ * @returns {[number, number]}
+ */
 export function foodSpan(a, x, flip) {
-  const w = DREAMS[a.dreams.food].rows[0].length + 2
+  const w = /** @type {string} */ (dreamOf(a.dreams.food).rows[0]).length + 2
   const near = x + (flip ? -FOOD_AHEAD : FOOD_AHEAD)
   return flip ? [near - w + 1, near] : [near, near + w - 1]
 }
@@ -848,9 +1095,14 @@ export function foodSpan(a, x, flip) {
 // The animal's favorite food on the ground in front of the animal centered on
 // fx.x, eaten down to the fx.left share. The animal eats from the near end,
 // so the far end stays put. Food that would run off the band slides back onto it.
+/**
+ * @param {Canvas} scene
+ * @param {Effect} fx
+ * @param {Breed} a
+ */
 function drawFood(scene, fx, a) {
-  const { rows, colors } = DREAMS[a.dreams.food]
-  const w = rows[0].length
+  const { rows, colors } = dreamOf(a.dreams.food)
+  const w = /** @type {string} */ (rows[0]).length
   const item = spriteCanvas(
     rows.map((r) => r.slice(w - Math.ceil(w * fx.left))),
     colors,
@@ -862,6 +1114,10 @@ function drawFood(scene, fx, a) {
 }
 
 // Packs pixel pairs into half-block cells, then lays text over them
+/**
+ * @param {Canvas} scene
+ * @param {Effect[]} texts
+ */
 function toCells(scene, texts) {
   const columns = scene.w
   const cells = new Uint32Array(columns * SCENE_ROWS * 3)
@@ -894,6 +1150,7 @@ function toCells(scene, texts) {
 }
 
 // Base64 of the cells' bytes, in the platform's byte order, as Raster expects
+/** @param {Uint32Array} cells */
 export function packCells(cells) {
   const bytes = new Uint8Array(cells.buffer, cells.byteOffset, cells.byteLength)
   // In chunks, since each byte becomes an argument to fromCharCode

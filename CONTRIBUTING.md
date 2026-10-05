@@ -62,9 +62,10 @@ npx prettier@3.8.1 --write .
 
 ## Type-check
 
-The tests are TypeScript, checked against Claude Code's plugin API and the
-types that `hooks/animal.js` and `hooks/scene.js` declare in JSDoc. Claude Code
-writes the API's types to `.claude-plugin/types/` each time it loads the
+The hooks are JavaScript with JSDoc types, and the tests are TypeScript. Both
+are type-checked, strictly, against each other and against Claude Code's plugin
+API. A new function in the hooks needs a JSDoc type for each parameter. Claude
+Code writes the API's types to `.claude-plugin/types/` each time it loads the
 plugin, so load it once with `claude --plugin-dir .`, then run:
 
 ```bash
