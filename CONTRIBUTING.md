@@ -84,6 +84,8 @@ The lockfile stays out of the repository root, where the Claude plugin
 directory would take it for dependencies to install for each user. To change a
 version, run `npm install --prefix .github/ci --save-exact <package>@<version>`,
 and keep the Prettier and TypeScript versions in this file's commands the same.
+Dependabot, set up in `.github/dependabot.yml`, proposes updates to both each
+week, once a release is a week old.
 
 Its Workflow security job audits the workflows with
 [zizmor](https://docs.zizmor.sh/), the GitHub Actions security linter, at its
