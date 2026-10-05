@@ -290,11 +290,11 @@ test('an interrupted turn away from home droops where it stands, then walks home
 test('a youngster plays for each running subagent, up to three', () => {
   const d = animal.createAnimal(() => 0.5)
   animal.noteTurnStart(d, 0)
-  for (let i = 0; i < 4; i++) animal.noteToolStart(d, i, 'Agent')
+  for (let i = 0; i < 4; i++) animal.noteToolStart(d, `a${i}`, 'Agent')
   const youngsters = (n: number) => animal.frame(d, n, 120).effects.filter((fx) => fx.kind === 'youngster').length
   expect(youngsters(2000)).toBe(3)
-  animal.noteToolEnd(d, 2000, 0, 'ok')
-  animal.noteToolEnd(d, 2000, 1, 'ok')
+  animal.noteToolEnd(d, 2000, 'a0', 'ok')
+  animal.noteToolEnd(d, 2000, 'a1', 'ok')
   expect(youngsters(2100)).toBe(2)
 })
 
@@ -303,7 +303,7 @@ test('youngsters stay on the band while the animal runs back and forth', () => {
     const d = animal.createAnimal(() => 0.5)
     animal.frame(d, 0, 120)
     animal.noteTurnStart(d, 0)
-    for (let i = 0; i < count; i++) animal.noteToolStart(d, i, 'Agent')
+    for (let i = 0; i < count; i++) animal.noteToolStart(d, `a${i}`, 'Agent')
     animal.noteToolStart(d, 'b', 'Bash')
     for (let now = 25; now <= 12_000; now += 25) {
       for (const fx of animal.frame(d, now, 120).effects.filter((fx) => fx.kind === 'youngster')) {

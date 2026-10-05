@@ -5,6 +5,8 @@
 // over while subagents run.
 import { ANIMALS, SCENE_ROWS, drawScene, isAnimal, packCells } from './scene.js'
 import * as animal from './animal.js'
+/** @import { Elements, EngineInterface, On, Timer } from 'claude-code' */
+/** @import { Animal } from './animal.js' */
 
 // Redraw interval. An animal that is only sleeping redraws every other tick.
 const TICK_MS = 125
@@ -22,6 +24,7 @@ let ticks = 0
 // For each surface that has rendered the band, such as the terminal or the
 // Desktop app, whether its last render had room for the animal, whether or not
 // it is hidden
+/** @type {Map<string, boolean>} */
 const room = new Map()
 // Whether some surface had room, or null before the first render
 function hasRoom() {
@@ -29,14 +32,17 @@ function hasRoom() {
 }
 // The last scene drawn, reused until the time, the band's size, or the animal
 // changes, or null
+/** @type {{ key: string, cells: string } | null} */
 let drawn = null
 // The redraw timer. Each session.start cancels the last one and starts
 // another. Claude Code cancels it when it unloads this module.
+/** @type {Timer | null} */
 let timer = null
 
 // The tick reads the time through here, and other handlers use the last tick's
 // time, which keeps them from waiting on the clock. Clock replies can arrive
 // out of order, so now only moves forward.
+/** @param {EngineInterface} $ */
 async function clockNow($) {
   const t = await $.clock.now()
   now = Math.max(now, t)
@@ -46,16 +52,23 @@ async function clockNow($) {
 // The time for a turn starting or ending. While the animal is hidden, the tick
 // doesn't read the clock, so this does. Other events while it is hidden use a
 // stale time, which at worst skips a reaction they start.
+/** @param {EngineInterface} $ */
 function eventTime($) {
   return enabled ? now : clockNow($)
 }
 
 // Passes an event on to the animal, so the next render draws it again
+/**
+ * @template {unknown[]} A
+ * @param {(d: Animal, ...args: A) => void} note
+ * @param {A} args
+ */
 function change(note, ...args) {
   note(d, ...args)
   drawn = null
 }
 
+/** @param {On} on */
 export function register(on) {
   // Runs before the first prompt, and again after a reload
   on('session.start', async ($, e, next) => {
@@ -82,7 +95,8 @@ export function register(on) {
   })
 
   on('turn.start', async ($, e, next) => {
-    if (e.agentId === undefined) change(animal.noteTurnStart, await eventTime($))
+    // A subagent's run raises no turn.start, so this is always the main loop's
+    change(animal.noteTurnStart, await eventTime($))
     return next(e)
   })
 
@@ -98,8 +112,8 @@ export function register(on) {
     let outcome = 'error'
     try {
       const result = await next(e)
-      const rejected =
-        result?.isError && typeof result.text === 'string' && REJECTED.some((s) => result.text.startsWith(s))
+      const text = result?.text
+      const rejected = result?.isError && typeof text === 'string' && REJECTED.some((s) => text.startsWith(s))
       outcome = result?.deny || rejected ? 'denied' : result?.isError ? 'error' : 'ok'
       return result
     } finally {
@@ -150,8 +164,9 @@ export function register(on) {
     const columns = e.props.bodyColumns
     const rows = Math.min(SCENE_ROWS, e.props.maxRows ?? SCENE_ROWS)
     room.set(e.surface, e.surface === 'terminal' && columns > 0 && rows >= MIN_ROWS)
-    if (!enabled || !room.get(e.surface)) return next(e)
-    const { Box, Raster } = await $.ui.resolve(e)
+    // Only the terminal ever has room
+    if (!enabled || e.surface !== 'terminal' || !room.get(e.surface)) return next(e)
+    const { Box, Raster } = /** @type {Elements['terminal']} */ (await $.ui.resolve(e))
     const key = `${now} ${columns} ${rows}`
     if (drawn?.key !== key) {
       let cells = drawScene(animal.frame(d, now, columns), columns)
