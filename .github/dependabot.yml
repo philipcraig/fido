@@ -22,3 +22,8 @@ updates:
     groups:
       ci-tools:
         patterns: ['*']
+    # A major TypeScript can change how the hooks' JSDoc is checked, so it's
+    # taken on by hand
+    ignore:
+      - dependency-name: typescript
+        update-types: ['version-update:semver-major']

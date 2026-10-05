@@ -56,9 +56,12 @@ covers the band while it is open.
 Code is formatted with Prettier. To check formatting, or fix it:
 
 ```bash
-npx prettier@3.8.1 --check .
-npx prettier@3.8.1 --write .
+node dev/tool.mjs prettier --check .
+node dev/tool.mjs prettier --write .
 ```
+
+`dev/tool.mjs` runs Prettier, or `tsc`, at the version CI pins in
+`.github/ci/package-lock.json`, so a check that passes locally passes in CI.
 
 ## Type-check
 
@@ -69,7 +72,7 @@ Code writes the API's types to `.claude-plugin/types/` each time it loads the
 plugin, so load it once with `claude --plugin-dir .`, then run:
 
 ```bash
-npx -p typescript@5.9.3 tsc -p .
+node dev/tool.mjs tsc -p .
 ```
 
 ## CI
@@ -83,10 +86,11 @@ The versions of Claude Code, Prettier and TypeScript it runs are pinned in
 `.github/ci/package-lock.json`, and the actions it uses are pinned to commits.
 The lockfile stays out of the repository root, where the Claude plugin
 directory would take it for dependencies to install for each user. To change a
-version, run `npm install --prefix .github/ci --save-exact <package>@<version>`,
-and keep the Prettier and TypeScript versions in this file's commands the same.
+version, run `npm install --prefix .github/ci --save-exact <package>@<version>`.
 Dependabot, set up in `.github/dependabot.yml`, proposes updates to both each
-week, once a release is a week old.
+week, once a release is a week old. It skips major versions of TypeScript,
+which can change how the hooks' JSDoc is checked; take one on by hand when
+you're ready.
 
 Its Workflow security job audits the workflows with
 [zizmor](https://docs.zizmor.sh/), the GitHub Actions security linter, at its
@@ -97,6 +101,27 @@ finding. To run it locally, with zizmor installed:
 zizmor --persona=pedantic .github/
 ```
 
+### Reviewing Dependabot's pull requests
+
+Most merge once CI is green, but some need work CI can't do. Ask Claude Code
+to review one with the `/review-dependabot` skill, giving the pull request's
+number, or none for all of Dependabot's open ones. It pushes any fixes to the
+pull request's branch and says whether it's ready to merge. It handles each
+kind of update:
+
+- **Claude Code**: it runs the mod in a live session of the new version, since
+  CI never does, then updates the version the README and
+  `docs/adding-an-animal.md` say the mod is tested with.
+- **Prettier**: it reformats the files if the new version formats differently.
+- **TypeScript**: it fixes the JSDoc or the tests if they no longer type-check.
+- **An action's major version**: it reads the release notes for changed
+  defaults.
+
+To review one by hand, follow the steps in
+`.claude/skills/review-dependabot/SKILL.md`. Dependabot doesn't move zizmor's
+own version, the `version:` input of the zizmor job, or `node-version` in each
+job, so change those by hand.
+
 ## Files
 
 - `hooks/register.js`: the hooks module. It handles events and draws the band.
@@ -106,7 +131,11 @@ zizmor --persona=pedantic .github/
 - `tests/`: the tests.
 - `dev/preview.mjs`: renders a scripted session to a PNG contact sheet.
 - `dev/live.sh`: runs Claude Code with the plugin in tmux, to drive and capture.
+  `PET_LIVE_CLAUDE` picks which Claude Code it runs.
 - `dev/snap.mjs`: renders a captured terminal screen to a PNG.
+- `dev/tool.mjs`: runs Prettier or `tsc` at the version CI pins.
 - `.github/workflows/ci.yml`: the CI workflow.
 - `.claude/skills/add-animal/SKILL.md`: the `/add-animal` skill, which adds a
   new animal from an idea to a pull request.
+- `.claude/skills/review-dependabot/SKILL.md`: the `/review-dependabot` skill,
+  which reviews a Dependabot pull request and does the work it needs.

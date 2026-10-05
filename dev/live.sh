@@ -10,6 +10,9 @@
 #   dev/live.sh attach                  attaches to the session, to watch or type yourself
 #   dev/live.sh stop                    ends the session
 #
+# PET_LIVE_CLAUDE picks the Claude Code to run, such as the one CI pins,
+# .github/ci/node_modules/.bin/claude. It defaults to the claude on PATH.
+#
 # Claude Code runs in a scratch folder, so its edits stay out of the
 # repository. Inside a Claude Code cloud session, it also gets a config folder
 # of its own, with onboarding done, so it skips the login and theme screens.
@@ -20,6 +23,11 @@ SESSION=${PET_LIVE_SESSION:-pet}
 DIR=${PET_LIVE_DIR:-${TMPDIR:-/tmp}/pet-live}
 COLS=${PET_LIVE_COLS:-110}
 ROWS=${PET_LIVE_ROWS:-36}
+CLAUDE=${PET_LIVE_CLAUDE:-claude}
+# A path runs from the scratch folder, so make it absolute
+if [[ "$CLAUDE" == */* ]]; then
+  CLAUDE=$(cd "$(dirname "$CLAUDE")" && pwd)/$(basename "$CLAUDE")
+fi
 
 cmd=${1:-}
 shift || true
@@ -46,7 +54,7 @@ case "$cmd" in
       env_args+=("CLAUDE_CONFIG_DIR=$DIR/config")
     fi
     printf -v claude_cmd '%q ' env "${env_args[@]}" TERM=xterm-256color COLORTERM=truecolor \
-      claude --plugin-dir "$REPO" "$@"
+      "$CLAUDE" --plugin-dir "$REPO" "$@"
     tmux new-session -d -s "$SESSION" -x "$COLS" -y "$ROWS" -c "$DIR/work" "$claude_cmd"
     echo "Started Claude Code in tmux session '$SESSION', working in $DIR/work"
     ;;
@@ -72,7 +80,7 @@ case "$cmd" in
     tmux kill-session -t "$SESSION"
     ;;
   *)
-    sed -n '2,13p' "$0" | sed 's/^# \{0,1\}//' >&2
+    sed -n '2,18p' "$0" | sed 's/^# \{0,1\}//' >&2
     exit 1
     ;;
 esac
