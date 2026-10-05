@@ -1,0 +1,24 @@
+# Proposes updates to what CI pins: the actions, pinned to commits, and the
+# tools in .github/ci/package-lock.json. A release must be a week old before
+# it's proposed, and each ecosystem's updates arrive as one pull request.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    groups:
+      actions:
+        patterns: ['*']
+
+  - package-ecosystem: npm
+    directory: /.github/ci
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    groups:
+      ci-tools:
+        patterns: ['*']
