@@ -1,2 +1,3 @@
 tsconfig.json
 .preview/
+.github/ci/node_modules/
