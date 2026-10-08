@@ -105,7 +105,9 @@ export function register(on) {
     return next(e)
   })
 
-  // Each tool call sets what the animal is doing until the call finishes
+  // Each tool call sets what the animal is doing until the call finishes. The
+  // animal never stops a call, so if this hook fails the call goes on as if it
+  // were not here: once run, its result stands, and it never runs twice
   on('tool.call', async ($, e, next) => {
     change(animal.noteToolStart, e.tool_use_id, e.tool)
     // A call that throws counts as failed
@@ -119,7 +121,7 @@ export function register(on) {
     } finally {
       change(animal.noteToolEnd, now, e.tool_use_id, outcome)
     }
-  })
+  }).catch(($, e, next) => next(e))
 
   // Typing in the prompt makes a sleeping animal's ear twitch
   on('prompt.edit', async ($, e, next) => {
