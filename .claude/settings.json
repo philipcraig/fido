@@ -1,0 +1,5 @@
+{
+  "permissions": {
+    "allow": ["Bash(PET_LIVE_CLAUDE=.github/ci/node_modules/.bin/claude dev/live.sh start *)", "Bash(dev/live.sh *)"]
+  }
+}

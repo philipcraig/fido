@@ -8,7 +8,7 @@ is one prompt.
 ## What you need
 
 - A GitHub account.
-- Claude Code v2.1.289 or later, and either of these:
+- Claude Code v2.1.293 or later, and either of these:
   - **Claude Code on the web** ([claude.ai/code](https://claude.ai/code)),
     where everything else is already set up. Pick this repository, or your
     fork of it, when you start a session.
