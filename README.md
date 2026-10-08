@@ -66,7 +66,9 @@ While Claude works, the animal reacts to what Claude is doing:
 
 The mod is a hooks module, `hooks/register.js`, that runs inside Claude Code.
 It watches Claude's turns and tool calls only to choose what the animal does,
-and draws the animal in the band above the prompt. It stores two settings with
+and draws the animal in the band above the prompt. It registers the `/pet`
+command and answers it itself; its `command.run` hook matches only `/pet`, so
+it never sees or changes any other command. It stores two settings with
 Claude Code's plugin storage: whether the animal is shown, and which animal it
 is. It sends nothing over the network, reads and writes no files, runs no
 commands, and calls no models.
