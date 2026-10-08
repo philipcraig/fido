@@ -2,7 +2,7 @@
   "private": true,
   "description": "Tools the CI workflow runs, pinned by package-lock.json",
   "devDependencies": {
-    "@anthropic-ai/claude-code": "2.1.289",
+    "@anthropic-ai/claude-code": "2.1.293",
     "prettier": "3.8.1",
     "typescript": "5.9.3"
   }
